@@ -106,6 +106,9 @@ public class ScheduleResponse {
         private Long seatId;
         private String seatNumber;
         private SeatType seatType;
+        private String status;
+        private BigDecimal fare;
+        private String gender;
 
         public SeatInfo() {}
 
@@ -115,14 +118,21 @@ public class ScheduleResponse {
             private Long seatId;
             private String seatNumber;
             private SeatType seatType;
+            private String status;
+            private BigDecimal fare;
+            private String gender;
 
             public Builder seatId(Long seatId) { this.seatId = seatId; return this; }
             public Builder seatNumber(String seatNumber) { this.seatNumber = seatNumber; return this; }
             public Builder seatType(SeatType seatType) { this.seatType = seatType; return this; }
+            public Builder status(String status) { this.status = status; return this; }
+            public Builder fare(BigDecimal fare) { this.fare = fare; return this; }
+            public Builder gender(String gender) { this.gender = gender; return this; }
 
             public SeatInfo build() {
                 SeatInfo si = new SeatInfo();
                 si.seatId = this.seatId; si.seatNumber = this.seatNumber; si.seatType = this.seatType;
+                si.status = this.status; si.fare = this.fare; si.gender = this.gender;
                 return si;
             }
         }
@@ -133,5 +143,11 @@ public class ScheduleResponse {
         public void setSeatNumber(String seatNumber) { this.seatNumber = seatNumber; }
         public SeatType getSeatType() { return seatType; }
         public void setSeatType(SeatType seatType) { this.seatType = seatType; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+        public BigDecimal getFare() { return fare; }
+        public void setFare(BigDecimal fare) { this.fare = fare; }
+        public String getGender() { return gender; }
+        public void setGender(String gender) { this.gender = gender; }
     }
 }

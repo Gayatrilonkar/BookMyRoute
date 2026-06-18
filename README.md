@@ -179,6 +179,12 @@ Then start the backend:
 mvn spring-boot:run
 ```
 
+If Maven is not installed globally, use the repo-local Maven on Windows:
+
+```powershell
+..\tools\apache-maven-3.9.9\bin\mvn.cmd spring-boot:run
+```
+
 The backend runs at: **http://localhost:8080**
 
 ---
@@ -209,13 +215,13 @@ All config lives in `backend/src/main/resources/application.properties`. Key set
 | `spring.datasource.password` | `root` | MySQL password |
 | `spring.datasource.url` | `jdbc:mysql://localhost:3306/bookmyroute` | DB connection URL |
 | `app.admin.email` | `book.my.route2026@gmail.com` | Default admin email |
-| `app.admin.password` | `Cr7RMA@9248` | Default admin password |
+| `app.admin.password` | *(required)* | Default admin password |
 | `razorpay.key.id` | *(required)* | Razorpay Key ID from dashboard |
 | `razorpay.key.secret` | *(required)* | Razorpay Key Secret from dashboard |
 | `razorpay.currency` | `INR` | Payment currency |
 | `spring.mail.username` | *(empty)* | SMTP username (your Gmail address) |
 | `spring.mail.password` | *(empty)* | Gmail App Password |
-| `app.mail.enabled` | `true` | Enable/disable email notifications |
+| `app.mail.enabled` | `false` | Enable/disable email notifications |
 | `app.mail.from` | `MAIL_USERNAME` | Sender email address |
 | `app.mail.sender-name` | `BookMyRoute` | Sender display name |
 | `app.jwt.expiration-ms` | `86400000` | JWT token expiry (24 hours) |
@@ -224,7 +230,7 @@ All config lives in `backend/src/main/resources/application.properties`. Key set
 You can also pass these as environment variables:
 
 ```bash
-DB_USERNAME=myuser DB_PASSWORD=mypass RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=secret mvn spring-boot:run
+DB_USERNAME=myuser DB_PASSWORD=mypass JWT_SECRET=change-me ADMIN_PASSWORD=change-me RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=secret mvn spring-boot:run
 ```
 
 For Gmail email notifications, enable 2-Step Verification in your Google account, create an App Password, then start the backend with:
@@ -239,7 +245,7 @@ MAIL_USERNAME=yourgmail@gmail.com MAIL_PASSWORD=your-app-password mvn spring-boo
 
 | Role | Email | Password |
 |------|-------|---------|
-| Admin | `book.my.route2026@gmail.com` | `Cr7RMA@9248` |
+| Admin | `book.my.route2026@gmail.com` | Set with `ADMIN_PASSWORD` |
 
 > The admin account is auto-created on first startup. Register new user accounts from the `/register` page.
 
@@ -369,5 +375,13 @@ npm run build
 ```bash
 cd backend
 mvn clean package -DskipTests
+java -jar target/bookmyroute-1.0.0.jar
+```
+
+On Windows without global Maven:
+
+```powershell
+cd backend
+..\tools\apache-maven-3.9.9\bin\mvn.cmd clean package -DskipTests
 java -jar target/bookmyroute-1.0.0.jar
 ```

@@ -29,10 +29,12 @@ public class AdminController {
 
     private final AdminService adminService;
     private final EmailService emailService;
+    private final com.bookmyroute.service.OtpService otpService;
 
-    public AdminController(AdminService adminService, EmailService emailService) {
+    public AdminController(AdminService adminService, EmailService emailService, com.bookmyroute.service.OtpService otpService) {
         this.adminService = adminService;
         this.emailService = emailService;
+        this.otpService = otpService;
     }
 
     @GetMapping("/dashboard")
@@ -44,6 +46,24 @@ public class AdminController {
     public ResponseEntity<ApiResponse<List<AdminBusResponse>>> buses(
             @RequestParam(required = false) Boolean active) {
         return ResponseEntity.ok(ApiResponse.success(adminService.getBuses(active)));
+    }
+
+    @PostMapping("/buses")
+    public ResponseEntity<ApiResponse<AdminBusResponse>> createBus(
+            @Valid @RequestBody com.bookmyroute.dto.request.AdminBusRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.createBus(request), "Bus created"));
+    }
+
+    @PutMapping("/buses/{busId}")
+    public ResponseEntity<ApiResponse<AdminBusResponse>> updateBus(
+            @PathVariable Long busId,
+            @Valid @RequestBody com.bookmyroute.dto.request.AdminBusRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.updateBus(busId, request), "Bus updated"));
+    }
+
+    @PatchMapping("/buses/{busId}/toggle")
+    public ResponseEntity<ApiResponse<AdminBusResponse>> toggleBus(@PathVariable Long busId) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.toggleBusStatus(busId), "Bus status toggled"));
     }
 
     @GetMapping("/routes")
@@ -62,6 +82,12 @@ public class AdminController {
             @PathVariable Long routeId,
             @Valid @RequestBody AdminRouteRequest request) {
         return ResponseEntity.ok(ApiResponse.success(adminService.updateRoute(routeId, request), "Route updated"));
+    }
+
+    @DeleteMapping("/routes/{routeId}")
+    public ResponseEntity<ApiResponse<Void>> deleteRoute(@PathVariable Long routeId) {
+        adminService.deleteRoute(routeId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Route deleted"));
     }
 
     @GetMapping("/schedules")
@@ -121,5 +147,32 @@ public class AdminController {
         EmailDeliveryResponse delivery = emailService.sendTestEmail(to);
         String message = delivery.isSent() ? "Test email sent" : delivery.getMessage();
         return ResponseEntity.ok(ApiResponse.success(delivery, message));
+    }
+
+    @PostMapping("/otp/request")
+    public ResponseEntity<ApiResponse<Void>> requestOtp(@Valid @RequestBody com.bookmyroute.dto.request.OtpRequest request) {
+        otpService.requestOtp(request.getEmail(), request.getPurpose());
+        return ResponseEntity.ok(ApiResponse.success(null, "OTP sent successfully"));
+    }
+
+    @PostMapping("/otp/verify")
+    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(@Valid @RequestBody com.bookmyroute.dto.request.OtpVerifyRequest request) {
+        boolean verified = otpService.verifyOtp(request.getEmail(), request.getPurpose(), request.getOtp());
+        return ResponseEntity.ok(ApiResponse.success(verified, "OTP verified successfully"));
+    }
+
+    @GetMapping("/settings")
+    public ResponseEntity<ApiResponse<List<com.bookmyroute.entity.SystemSetting>>> getSettings() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getSettings()));
+    }
+
+    @PutMapping("/settings")
+    public ResponseEntity<ApiResponse<List<com.bookmyroute.entity.SystemSetting>>> updateSettings(@RequestBody java.util.Map<String, String> settings) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.updateSettings(settings), "Settings updated"));
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<ApiResponse<List<com.bookmyroute.entity.AdminActionLog>>> getLogs() {
+        return ResponseEntity.ok(ApiResponse.success(adminService.getLogs()));
     }
 }

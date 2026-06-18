@@ -21,8 +21,8 @@ public class Seat {
     private String seatNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "seat_type", nullable = false, length = 10)
-    private SeatType seatType = SeatType.LOWER;
+    @Column(name = "seat_type", nullable = false, length = 15)
+    private SeatType seatType = SeatType.LOWER_LEFT;
 
     public Seat() {}
 
@@ -36,7 +36,7 @@ public class Seat {
         private Long id;
         private Bus bus;
         private String seatNumber;
-        private SeatType seatType = SeatType.LOWER;
+        private SeatType seatType = SeatType.LOWER_LEFT;
 
         public Builder id(Long id) { this.id = id; return this; }
         public Builder bus(Bus bus) { this.bus = bus; return this; }

@@ -33,7 +33,7 @@ export function CitySearchInput({ label, value, onChange, cities, accent = '#d84
   const [activeIndex, setActiveIndex] = useState(0)
 
   const matches = useMemo(() => {
-    const clean = value.trim().toLowerCase()
+    const clean = (value || '').trim().toLowerCase()
     const list = clean
       ? cities.filter(city => city.toLowerCase().includes(clean))
       : cities

@@ -32,12 +32,16 @@ public class BookingSeat {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal fare;
 
+    @Column(name = "passenger_gender", length = 10)
+    private String passengerGender;
+
     public BookingSeat() {}
 
     public BookingSeat(Long id, Booking booking, Seat seat, String passengerName,
-                       Integer passengerAge, BigDecimal fare) {
+                       Integer passengerAge, BigDecimal fare, String passengerGender) {
         this.id = id; this.booking = booking; this.seat = seat;
         this.passengerName = passengerName; this.passengerAge = passengerAge; this.fare = fare;
+        this.passengerGender = passengerGender;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -49,6 +53,7 @@ public class BookingSeat {
         private String passengerName;
         private Integer passengerAge;
         private BigDecimal fare;
+        private String passengerGender;
 
         public Builder id(Long id) { this.id = id; return this; }
         public Builder booking(Booking booking) { this.booking = booking; return this; }
@@ -56,11 +61,13 @@ public class BookingSeat {
         public Builder passengerName(String passengerName) { this.passengerName = passengerName; return this; }
         public Builder passengerAge(Integer passengerAge) { this.passengerAge = passengerAge; return this; }
         public Builder fare(BigDecimal fare) { this.fare = fare; return this; }
+        public Builder passengerGender(String passengerGender) { this.passengerGender = passengerGender; return this; }
 
         public BookingSeat build() {
             BookingSeat bs = new BookingSeat();
             bs.id = this.id; bs.booking = this.booking; bs.seat = this.seat;
             bs.passengerName = this.passengerName; bs.passengerAge = this.passengerAge; bs.fare = this.fare;
+            bs.passengerGender = this.passengerGender;
             return bs;
         }
     }
@@ -77,4 +84,6 @@ public class BookingSeat {
     public void setPassengerAge(Integer passengerAge) { this.passengerAge = passengerAge; }
     public BigDecimal getFare() { return fare; }
     public void setFare(BigDecimal fare) { this.fare = fare; }
+    public String getPassengerGender() { return passengerGender; }
+    public void setPassengerGender(String passengerGender) { this.passengerGender = passengerGender; }
 }

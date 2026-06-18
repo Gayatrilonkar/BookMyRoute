@@ -85,6 +85,7 @@ export const searchApi = {
 
 export const routeApi = {
   getRoute: (id) => api.get(`/routes/${id}`),
+  getRouteStops: (id) => api.get(`/routes/${id}/stops`),
 }
 
 // ── Seats ─────────────────────────────────────────────────────
@@ -151,15 +152,20 @@ export const supportApi = {
 // CRUD /api/buses, /api/routes, /api/schedules (ADMIN role required)
 // GET  /api/bookings (ADMIN) → all bookings
 export const adminApi = {
-  // Stats (no dedicated admin/stats endpoint in backend — build from buses+routes+bookings)
+  getDashboardStats: () => api.get('/admin/dashboard'),
+  
+  getUsers:       (params)   => api.get('/admin/users', { params }),
+  updateUser:     (id, data) => api.put(`/admin/users/${id}`, data),
+
   getBuses:       (params)   => api.get('/admin/buses', { params }),
-  createBus:      (data)     => api.post('/buses', data),
-  updateBus:      (id, data) => api.put(`/buses/${id}`, data),
-  toggleBus:      (id)       => api.delete(`/buses/${id}`),          // deactivates
+  createBus:      (data)     => api.post('/admin/buses', data),
+  updateBus:      (id, data) => api.put(`/admin/buses/${id}`, data),
+  toggleBus:      (id)       => api.patch(`/admin/buses/${id}/toggle`),
 
   getRoutes:      (params)   => api.get('/admin/routes', { params }),
-  createRoute:    (data)     => api.post('/routes', data),
-  updateRoute:    (id, data) => api.put(`/routes/${id}`, data),
+  createRoute:    (data)     => api.post('/admin/routes', data),
+  updateRoute:    (id, data) => api.put(`/admin/routes/${id}`, data),
+  deleteRoute:    (id)       => api.delete(`/admin/routes/${id}`),
 
   getSchedules:   (params)   => api.get('/admin/schedules', { params }),
   createSchedule: (data)     => api.post('/admin/schedules', data),
@@ -169,6 +175,13 @@ export const adminApi = {
   getAllBookings:  (params)   => api.get('/admin/bookings', { params }),
   getSupportRequests: ()      => api.get('/support/requests'),
   replySupportRequest: (ticketRef, reply) => api.post(`/support/requests/${ticketRef}/reply`, { reply }),
+
+  requestOtp:     (data)     => api.post('/admin/otp/request', data),
+  verifyOtp:      (data)     => api.post('/admin/otp/verify', data),
+
+  getSettings:    ()         => api.get('/admin/settings'),
+  updateSettings: (data)     => api.put('/admin/settings', data),
+  getLogs:        ()         => api.get('/admin/logs'),
 }
 
 export default api

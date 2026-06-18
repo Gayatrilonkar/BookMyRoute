@@ -6,10 +6,10 @@ import { bookingApi, reviewApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const STATUS_STYLE = {
-  CONFIRMED: { bg: '#059669', label: 'Confirmed' },
-  PENDING: { bg: '#f59e0b', label: 'Pending' },
-  CANCELLED: { bg: '#dc2626', label: 'Cancelled' },
-  COMPLETED: { bg: '#172033', label: 'Completed' },
+  CONFIRMED: { bg: 'var(--color-success)', label: 'Confirmed' },
+  PENDING: { bg: 'var(--color-warning)', label: 'Pending' },
+  CANCELLED: { bg: 'var(--color-error)', label: 'Cancelled' },
+  COMPLETED: { bg: 'var(--color-secondary)', label: 'Completed' },
 }
 
 function fmtDT(dt) {
@@ -67,18 +67,18 @@ function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#172033]/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-secondary/70 p-4 backdrop-blur-sm"
       onClick={event => event.target === event.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between bg-[#172033] px-5 py-4 text-white">
+      <div className="w-full max-w-lg overflow-hidden rounded-lg border border-border-medium bg-surface shadow-xl">
+        <div className="flex items-center justify-between bg-secondary px-5 py-4 text-white">
           <div className="flex items-center gap-2">
-            <FaBus className="text-[#f59e0b]" />
-            <span className="font-800">BookMyRoute ticket</span>
+            <FaBus className="text-warning" />
+            <span className="font-bold">BookMyRoute ticket</span>
           </div>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Close ticket"
           >
             <FaTimes />
@@ -88,24 +88,24 @@ function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
         <div className="p-6">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-800 uppercase text-slate-400">Booking ref</p>
-              <p className="mt-1 font-mono text-sm font-800 text-[#172033]">{booking.bookingRef}</p>
+              <p className="text-xs font-bold uppercase text-text-muted tracking-wider">Booking ref</p>
+              <p className="mt-1 font-mono text-[15px] font-bold text-secondary">{booking.bookingRef}</p>
             </div>
-            <span className="rounded-full px-3 py-1 text-xs font-800 text-white" style={{ background: style.bg }}>
+            <span className="rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm" style={{ background: style.bg }}>
               {style.label}
             </span>
           </div>
 
-          <div className="mb-5 rounded-lg border border-gray-200 bg-slate-50 p-4">
+          <div className="mb-5 rounded-xl border border-border-light bg-surface shadow-sm p-4">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               <div>
-                <p className="text-xs font-800 uppercase text-slate-400">From</p>
-                <p className="truncate text-2xl font-800 text-[#172033]">{booking.origin}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">From</p>
+                <p className="truncate text-xl font-bold text-secondary">{booking.origin}</p>
               </div>
-              <FaBus className="text-xl text-[#d84e55]" />
+              <FaBus className="text-xl text-primary opacity-80" />
               <div className="text-right">
-                <p className="text-xs font-800 uppercase text-slate-400">To</p>
-                <p className="truncate text-2xl font-800 text-[#172033]">{booking.destination}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">To</p>
+                <p className="truncate text-xl font-bold text-secondary">{booking.destination}</p>
               </div>
             </div>
           </div>
@@ -114,30 +114,32 @@ function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
             {[
               ['Bus', booking.busName],
               ['Departure', fmtDT(booking.departureTime)],
+              ['Boarding', `${booking.pickupStopName || ''} ${booking.pickupSubLocationName ? `(${booking.pickupSubLocationName})` : ''}`.trim() || '--'],
+              ['Dropping', `${booking.dropStopName || ''} ${booking.dropSubLocationName ? `(${booking.dropSubLocationName})` : ''}`.trim() || '--'],
               ['Seats', booking.seats?.map(seat => seat.seatNumber).join(', ') || '--'],
               ['Passengers', booking.seats?.length || '--'],
               ['Payment', booking.paymentMethod || '--'],
               ['Pay status', booking.paymentStatus || '--'],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-lg bg-slate-50 p-3">
-                <p className="text-xs font-800 uppercase text-slate-400">{label}</p>
-                <p className="mt-1 text-sm font-800 text-[#172033]">{value}</p>
+              <div key={label} className="rounded-xl bg-surface border border-border-light shadow-sm p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">{label}</p>
+                <p className="mt-1 text-[13px] font-bold text-secondary">{value}</p>
               </div>
             ))}
           </div>
 
-          <div className="mb-5 flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
-            <span className="font-800 text-[#172033]">Total amount</span>
-            <span className="text-2xl font-800 text-[#d84e55]">Rs {booking.totalAmount}</span>
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+            <span className="font-bold text-secondary">Total amount</span>
+            <span className="text-2xl font-bold font-mono text-primary">₹{booking.totalAmount}</span>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={() => onDownload(booking.bookingRef)}
               disabled={downloading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#172033] py-3 text-sm font-800 text-white transition-colors hover:bg-[#22304a] disabled:opacity-60"
+              className="btn-primary flex-1 justify-center py-3"
             >
-              <FaDownload />
+              <FaDownload className="mr-2"/>
               {downloading ? 'Downloading...' : 'Download ticket'}
             </button>
 
@@ -233,28 +235,28 @@ function RatingModal({ booking, onClose, onSaved }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#172033]/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-secondary/70 p-4 backdrop-blur-sm"
       onClick={event => event.target === event.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between bg-[#172033] px-5 py-4 text-white">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-border-medium bg-surface shadow-xl">
+        <div className="flex items-center justify-between bg-secondary px-5 py-4 text-white">
           <div>
-            <p className="font-800">Rate your journey</p>
-            <p className="text-xs text-slate-300">{booking.origin} to {booking.destination}</p>
+            <p className="font-bold text-lg">Rate your journey</p>
+            <p className="text-xs text-white/70 font-medium mt-0.5">{booking.origin} to {booking.destination}</p>
           </div>
-          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20" aria-label="Close rating">
+          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors" aria-label="Close rating">
             <FaTimes />
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-6">
           {loading ? (
-            <div className="rounded-lg border border-dashed border-gray-300 bg-slate-50 p-8 text-center text-sm font-700 text-slate-500">
+            <div className="rounded-xl border border-dashed border-border-medium bg-surface/50 p-8 text-center text-[15px] font-medium text-text-muted">
               Loading your review...
             </div>
           ) : (
             <>
-              <div className="mb-5 text-center">
+              <div className="mb-6 text-center">
                 <div className="mb-2 flex justify-center gap-2">
                   {[1, 2, 3, 4, 5].map(value => {
                     const active = value <= (hovered || rating)
@@ -265,7 +267,7 @@ function RatingModal({ booking, onClose, onSaved }) {
                         onClick={() => setRating(value)}
                         onMouseEnter={() => setHovered(value)}
                         onMouseLeave={() => setHovered(0)}
-                        className={`text-3xl transition-transform hover:scale-110 ${active ? 'text-[#f59e0b]' : 'text-slate-300'}`}
+                        className={`text-3xl transition-all hover:scale-110 ${active ? 'text-warning drop-shadow-sm' : 'text-border-medium hover:text-warning/50'}`}
                         aria-label={`${value} star${value > 1 ? 's' : ''}`}
                       >
                         {active ? <FaStar /> : <FaRegStar />}
@@ -273,13 +275,13 @@ function RatingModal({ booking, onClose, onSaved }) {
                     )
                   })}
                 </div>
-                <p className="text-sm font-700 text-slate-500">
+                <p className="text-[13px] font-medium text-text-muted">
                   {rating ? `${rating} out of 5 stars` : 'Select your rating'}
                 </p>
               </div>
 
-              <label>
-                <span className="mb-1 block text-xs font-800 uppercase text-slate-500">Comment</span>
+              <label className="block mb-6">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-text-muted">Comment</span>
                 <textarea
                   value={comment}
                   onChange={event => setComment(event.target.value)}
@@ -288,19 +290,19 @@ function RatingModal({ booking, onClose, onSaved }) {
                   placeholder="What stood out about this trip?"
                   className="input-field resize-none"
                 />
+                <div className="mt-1.5 flex justify-between text-xs text-text-muted font-medium">
+                  <span className={error ? "text-error" : ""}>{error || 'Your review helps other passengers choose confidently.'}</span>
+                  <span>{comment.length}/1000</span>
+                </div>
               </label>
-              <div className="mt-1 flex justify-between text-xs text-slate-400">
-                <span>{error || 'Your review helps other passengers choose confidently.'}</span>
-                <span>{comment.length}/1000</span>
-              </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-                <button onClick={handleSave} disabled={saving || deleting} className="btn-primary">
+                <button onClick={handleSave} disabled={saving || deleting} className="btn-primary justify-center">
                   {saving ? 'Saving...' : reviewId ? 'Update review' : 'Submit review'}
                 </button>
                 {reviewId && (
-                  <button onClick={handleDelete} disabled={saving || deleting} className="btn-outline text-red-600 hover:border-red-600 hover:text-red-600">
-                    <FaTrash /> {deleting ? 'Deleting...' : 'Delete'}
+                  <button onClick={handleDelete} disabled={saving || deleting} className="btn-outline border-error text-error hover:bg-error hover:text-white justify-center">
+                    <FaTrash className="mr-2"/> {deleting ? 'Deleting...' : 'Delete'}
                   </button>
                 )}
               </div>
@@ -318,57 +320,57 @@ function BookingCard({ booking, onClick, onCancel, onDownload, onRate, downloadi
   const canCancel = canCancelBooking(booking)
 
   return (
-    <div className="card-hover w-full p-5">
+    <div className="card-hover w-full p-5 lg:p-6 bg-surface border border-border-light rounded-2xl shadow-sm transition-all hover:shadow-md hover:border-primary/20">
       <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
-        <button className="flex min-w-0 items-center gap-3 text-left" onClick={onClick}>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: style.bg }}>
-            <FaTicketAlt />
+        <button className="flex min-w-0 items-center gap-4 text-left group" onClick={onClick}>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform group-hover:scale-105" style={{ background: style.bg }}>
+            <FaTicketAlt className="text-xl" />
           </div>
           <div className="min-w-0">
-            <p className="font-mono text-sm font-800 text-slate-500">{booking.bookingRef}</p>
-            <p className="truncate text-lg font-800 text-[#172033]">{booking.origin} to {booking.destination}</p>
-            <p className="truncate text-sm text-slate-500">{booking.busName} | {fmtDT(booking.departureTime)}</p>
+            <p className="font-mono text-[13px] font-bold text-text-muted">{booking.bookingRef}</p>
+            <p className="truncate text-lg font-bold text-secondary group-hover:text-primary transition-colors">{booking.origin} to {booking.destination}</p>
+            <p className="truncate text-[13px] font-medium text-text-muted">{booking.busName} • {fmtDT(booking.departureTime)}</p>
           </div>
         </button>
 
-        <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-          <span className="badge"><FaUserFriends /> {seats} seat{seats !== 1 ? 's' : ''}</span>
-          <span className="badge"><FaMoneyBillWave /> Rs {booking.totalAmount}</span>
+        <div className="flex flex-wrap gap-2 text-[13px] font-medium text-text-muted">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/5 px-3 py-1"><FaUserFriends className="text-secondary/50"/> {seats} seat{seats !== 1 ? 's' : ''}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/5 px-3 py-1"><FaMoneyBillWave className="text-secondary/50"/> ₹{booking.totalAmount}</span>
         </div>
 
-        <span className="w-fit rounded-full px-3 py-1 text-xs font-800 text-white lg:justify-self-end" style={{ background: style.bg }}>
+        <span className="w-fit rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm lg:justify-self-end tracking-wide uppercase" style={{ background: style.bg }}>
           {style.label}
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
+      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-dashed border-border-medium pt-5">
         {booking.bookingStatus === 'COMPLETED' && (
           <button
             onClick={() => onRate(booking)}
-            className="flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-50 px-4 py-2 text-sm font-800 text-amber-700 transition-colors hover:bg-amber-100"
+            className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-4 py-2 text-sm font-bold text-warning transition-colors hover:bg-warning hover:text-white"
           >
             <FaStar />
-            {booking.reviewed ? 'Edit review' : 'Rate your journey'}
+            {booking.reviewed ? 'Edit review' : 'Rate journey'}
           </button>
         )}
 
         <button
           onClick={() => onDownload(booking.bookingRef)}
           disabled={downloading}
-          className="flex items-center gap-2 rounded-lg bg-[#172033] px-4 py-2 text-sm font-800 text-white transition-colors hover:bg-[#22304a] disabled:opacity-60"
+          className="btn-primary px-4 py-2 text-sm h-10"
         >
-          <FaDownload />
-          {downloading ? 'Downloading...' : 'Download ticket'}
+          <FaDownload className="mr-2"/>
+          {downloading ? 'Downloading...' : 'Ticket PDF'}
         </button>
 
         {canCancel && (
           <button
             onClick={() => onCancel(booking.bookingRef)}
             disabled={cancelling}
-            className="flex items-center gap-2 rounded-lg border border-red-600 px-4 py-2 text-sm font-800 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+            className="btn-outline border-error text-error hover:bg-error hover:text-white px-4 py-2 text-sm h-10"
           >
-            <FaTimes />
-            {cancelling ? 'Cancelling...' : 'Cancel booking'}
+            <FaTimes className="mr-2"/>
+            {cancelling ? 'Cancelling...' : 'Cancel'}
           </button>
         )}
       </div>
@@ -503,49 +505,49 @@ export default function MyBookingsPage() {
 
   return (
     <div className="page-shell">
-      <div className="border-b border-gray-200 bg-white">
-        <div className="section-wrap py-6">
-          <h1 className="text-2xl font-800 text-[#172033]">My bookings</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage upcoming and past trips{user?.name ? ` for ${user.name.split(' ')[0]}` : ''}.</p>
+      <div className="border-b border-border-light bg-surface shadow-sm">
+        <div className="section-wrap py-8">
+          <h1 className="text-3xl font-display font-bold text-secondary">My bookings</h1>
+          <p className="mt-2 text-[15px] text-text-muted">Manage upcoming and past trips{user?.name ? ` for ${user.name.split(' ')[0]}` : ''}.</p>
         </div>
       </div>
 
       <div className="section-wrap max-w-5xl py-8">
-        <div className="mb-6 grid gap-3 md:grid-cols-3">
-          <div className="card p-4">
-            <FaTicketAlt className="mb-3 text-[#d84e55]" />
-            <p className="text-2xl font-800 text-[#172033]">{summaryLoading ? '--' : summaryBookings.length}</p>
-            <p className="text-sm text-slate-500">Total bookings</p>
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="card p-5 border-t-4 border-t-primary">
+            <FaTicketAlt className="mb-4 text-3xl text-primary opacity-80" />
+            <p className="text-3xl font-bold font-display text-secondary">{summaryLoading ? '--' : summaryBookings.length}</p>
+            <p className="text-[13px] font-bold uppercase tracking-wider text-text-muted mt-1">Total bookings</p>
           </div>
-          <div className="card p-4">
-            <FaCalendarAlt className="mb-3 text-[#2563eb]" />
-            <p className="text-2xl font-800 text-[#172033]">{summaryLoading ? '--' : summaryBookings.filter(b => b.bookingStatus === 'CONFIRMED').length}</p>
-            <p className="text-sm text-slate-500">Confirmed trips</p>
+          <div className="card p-5 border-t-4 border-t-success">
+            <FaCalendarAlt className="mb-4 text-3xl text-success opacity-80" />
+            <p className="text-3xl font-bold font-display text-secondary">{summaryLoading ? '--' : summaryBookings.filter(b => b.bookingStatus === 'CONFIRMED').length}</p>
+            <p className="text-[13px] font-bold uppercase tracking-wider text-text-muted mt-1">Confirmed trips</p>
           </div>
-          <div className="card p-4">
-            <FaRoute className="mb-3 text-[#059669]" />
-            <p className="text-2xl font-800 text-[#172033]">{summaryLoading ? '--' : new Set(summaryBookings.map(b => `${b.origin}-${b.destination}`)).size}</p>
-            <p className="text-sm text-slate-500">Routes booked</p>
+          <div className="card p-5 border-t-4 border-t-warning">
+            <FaRoute className="mb-4 text-3xl text-warning opacity-80" />
+            <p className="text-3xl font-bold font-display text-secondary">{summaryLoading ? '--' : new Set(summaryBookings.map(b => `${b.origin}-${b.destination}`)).size}</p>
+            <p className="text-[13px] font-bold uppercase tracking-wider text-text-muted mt-1">Routes booked</p>
           </div>
         </div>
 
-        <form onSubmit={handleSearch} className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2563eb]/10 text-[#2563eb]">
-                <FaFilter />
+        <form onSubmit={handleSearch} className="mb-8 rounded-2xl border border-border-light bg-surface p-5 shadow-sm">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <FaFilter className="text-lg"/>
               </span>
               <div>
-                <h2 className="text-base font-800 text-[#172033]">Search bookings</h2>
-                <p className="text-xs text-slate-500">{pageInfo.totalElements} booking{pageInfo.totalElements === 1 ? '' : 's'} match current filters</p>
+                <h2 className="text-lg font-bold text-secondary">Search bookings</h2>
+                <p className="text-sm text-text-muted mt-0.5">{pageInfo.totalElements} booking{pageInfo.totalElements === 1 ? '' : 's'} match current filters</p>
               </div>
             </div>
-            {loading && <span className="text-xs font-800 uppercase text-[#2563eb]">Loading...</span>}
+            {loading && <span className="text-[11px] font-bold uppercase tracking-wider text-primary animate-pulse">Loading...</span>}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_1fr_auto_auto] md:items-end">
+          <div className="grid gap-4 md:grid-cols-[1.1fr_1fr_1fr_auto_auto] md:items-end">
             <label>
-              <span className="mb-1 block text-xs font-800 uppercase text-slate-500">Booking status</span>
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-text-muted">Booking status</span>
               <select
                 value={filters.status}
                 onChange={event => setFilters(current => ({ ...current, status: event.target.value }))}
@@ -560,7 +562,7 @@ export default function MyBookingsPage() {
             </label>
 
             <label>
-              <span className="mb-1 block text-xs font-800 uppercase text-slate-500">From date</span>
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-text-muted">From date</span>
               <input
                 type="date"
                 value={filters.fromDate}
@@ -570,7 +572,7 @@ export default function MyBookingsPage() {
             </label>
 
             <label>
-              <span className="mb-1 block text-xs font-800 uppercase text-slate-500">To date</span>
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-text-muted">To date</span>
               <input
                 type="date"
                 value={filters.toDate}
@@ -579,36 +581,36 @@ export default function MyBookingsPage() {
               />
             </label>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full md:w-auto">
-              <FaSearch />
+            <button type="submit" disabled={loading} className="btn-primary w-full md:w-auto justify-center h-11">
+              <FaSearch className="mr-2"/>
               Search
             </button>
 
-            <button type="button" onClick={handleResetFilters} disabled={loading} className="btn-outline w-full md:w-auto">
-              <FaUndo />
+            <button type="button" onClick={handleResetFilters} disabled={loading} className="btn-outline w-full md:w-auto justify-center h-11">
+              <FaUndo className="mr-2"/>
               Reset
             </button>
           </div>
 
           {(validationError || listError) && (
-            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-700 text-red-700">
+            <p className="mt-4 rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-sm font-bold text-error">
               {validationError || listError}
             </p>
           )}
         </form>
 
         {loading ? (
-          <div className="card p-12 text-center">
-            <FaTicketAlt className="mx-auto mb-4 animate-pulse text-5xl text-[#d84e55]" />
-            <p className="text-sm font-700 text-slate-500">Loading your bookings...</p>
+          <div className="card p-12 text-center border-dashed">
+            <FaTicketAlt className="mx-auto mb-4 animate-pulse text-5xl text-primary opacity-50" />
+            <p className="text-[15px] font-medium text-text-muted">Loading your bookings...</p>
           </div>
         ) : bookings.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-            <FaBus className="mx-auto mb-4 text-5xl text-slate-300" />
-            <h2 className="text-xl font-800 text-[#172033]">
+          <div className="rounded-2xl border border-dashed border-border-medium bg-surface/50 p-16 text-center">
+            <FaBus className="mx-auto mb-5 text-6xl text-text-muted opacity-30" />
+            <h2 className="text-xl font-bold text-secondary">
               {hasActiveFilters ? 'No bookings found for selected filters.' : 'No bookings yet'}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-[15px] text-text-muted">
               {hasActiveFilters ? 'Try changing the status or booking date range.' : 'Search for a route to start your next trip.'}
             </p>
           </div>
@@ -630,8 +632,8 @@ export default function MyBookingsPage() {
             </div>
 
             {pageInfo.totalPages > 1 && (
-              <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 sm:flex-row">
-                <p className="text-sm font-700 text-slate-500">
+              <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-xl border border-border-light bg-surface px-5 py-4 shadow-sm sm:flex-row">
+                <p className="text-sm font-bold text-text-muted">
                   Page {pageInfo.page + 1} of {pageInfo.totalPages}
                 </p>
                 <div className="flex gap-2">
@@ -640,7 +642,7 @@ export default function MyBookingsPage() {
                     disabled={loading || pageInfo.page === 0}
                     className="btn-outline px-4 py-2"
                   >
-                    <FaChevronLeft />
+                    <FaChevronLeft className="mr-1"/>
                     Previous
                   </button>
                   <button
@@ -649,7 +651,7 @@ export default function MyBookingsPage() {
                     className="btn-outline px-4 py-2"
                   >
                     Next
-                    <FaChevronRight />
+                    <FaChevronRight className="ml-1"/>
                   </button>
                 </div>
               </div>

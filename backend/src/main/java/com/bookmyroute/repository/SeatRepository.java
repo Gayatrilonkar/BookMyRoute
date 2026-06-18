@@ -18,7 +18,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
           AND s.id NOT IN (
               SELECT bs.seat.id FROM BookingSeat bs
               WHERE bs.booking.schedule.id = :scheduleId
-                AND bs.booking.status <> 'CANCELLED'
+                AND bs.booking.status <> com.bookmyroute.enums.BookingStatus.CANCELLED
           )
         """)
     List<Seat> findAvailableSeatsBySchedule(@Param("busId") Long busId,

@@ -21,10 +21,10 @@ export default function Navbar() {
     <Link
       to={to}
       onClick={() => mobile && setOpen(false)}
-      className={`rounded-lg px-3 py-2 text-sm font-700 transition-colors ${
+      className={`rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
         pathname === to
-          ? 'bg-[#d84e55]/10 text-[#d84e55]'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-[#172033]'
+          ? 'bg-primary/10 text-primary'
+          : 'text-gray-300 hover:bg-white/5 hover:text-white'
       }`}
     >
       {label}
@@ -32,28 +32,28 @@ export default function Navbar() {
   )
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="section-wrap flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#d84e55] text-white">
-            <FaBusAlt />
+    <nav className="sticky top-0 z-50 bg-secondary text-white shadow-md">
+      <div className="section-wrap flex h-[72px] items-center justify-between">
+        <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
+            <FaBusAlt size={20} />
           </span>
-          <span className="text-xl font-800 tracking-tight text-[#172033]">
+          <span className="text-xl font-bold tracking-tight text-white">
             BookMyRoute
           </span>
         </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           <Link
             to="/help"
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-700 transition-colors ${
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
               pathname === '/help'
-                ? 'bg-[#d84e55]/10 text-[#d84e55]'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-[#172033]'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-300 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <FaHeadset className="text-[#d84e55]" />
-            Help desk
+            <FaHeadset className={pathname === '/help' ? 'text-primary' : 'text-gray-400'} />
+            Help
           </Link>
           {user ? (
             <>
@@ -64,27 +64,27 @@ export default function Navbar() {
               <div className="relative ml-2">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-700 text-[#172033] hover:border-[#d84e55]/40"
+                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[15px] font-medium text-white hover:border-primary/40 hover:bg-white/10 transition-colors"
                 >
-                  <FaUserCircle className="text-[#d84e55]" />
+                  <FaUserCircle className="text-primary" size={18} />
                   <span>{user.name?.split(' ')[0] || 'Account'}</span>
                 </button>
                 {profileOpen && (
-                  <div className="absolute right-0 top-12 z-50 min-w-[220px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg">
+                  <div className="absolute right-0 top-14 z-50 min-w-[220px] rounded-xl border border-gray-200 bg-white py-2 shadow-xl text-text-body">
                     <div className="border-b border-gray-100 px-4 py-3">
-                      <p className="text-sm font-800 text-[#172033]">{user.name}</p>
-                      <p className="text-xs text-slate-500">{user.email}</p>
+                      <p className="text-[15px] font-bold text-secondary">{user.name}</p>
+                      <p className="text-xs text-text-muted">{user.email}</p>
                     </div>
                     <Link
                       to="/profile"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-700 text-[#172033] hover:bg-slate-50"
+                      className="flex items-center gap-2 px-4 py-2.5 text-[15px] font-medium text-secondary hover:bg-gray-50 transition-colors"
                     >
-                      <FaIdBadge className="text-[#d84e55]" /> Profile
+                      <FaIdBadge className="text-primary" /> Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-700 text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[15px] font-medium text-danger hover:bg-danger-light transition-colors"
                     >
                       <FaSignOutAlt /> Logout
                     </button>
@@ -93,69 +93,69 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            <>
-              <Link to="/login" className="btn-outline px-4 py-2">Login</Link>
-              <Link to="/register" className="btn-primary px-4 py-2">Register</Link>
-            </>
+            <div className="flex items-center gap-3 ml-2">
+              <Link to="/login" className="btn-outline text-white hover:text-white hover:bg-white/10 px-5">Login</Link>
+              <Link to="/register" className="btn-primary px-5">Register</Link>
+            </div>
           )}
         </div>
 
         <button
           type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-[#172033] md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 text-white md:hidden hover:bg-white/10"
           onClick={() => setOpen(!open)}
           aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         >
-          {open ? <FaTimes /> : <FaBars />}
+          {open ? <FaTimes size={18} /> : <FaBars size={18} />}
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-gray-100 bg-white px-4 py-4 md:hidden">
+        <div className="border-t border-white/10 bg-secondary px-4 py-4 md:hidden">
           <div className="flex flex-col gap-2">
             <Link
               to="/help"
               onClick={() => setOpen(false)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-700 ${
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium ${
                 pathname === '/help'
-                  ? 'bg-[#d84e55]/10 text-[#d84e55]'
-                  : 'text-[#172033] hover:bg-slate-100'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <FaHeadset /> Help desk
+              <FaHeadset className={pathname === '/help' ? 'text-primary' : 'text-gray-400'} /> Help
             </Link>
             {user ? (
               <>
                 {navLink('/search', 'Search buses', true)}
                 {!isAdmin && navLink('/my-bookings', 'My bookings', true)}
                 {isAdmin && navLink('/admin', 'Admin', true)}
-                <div className="mt-2 border-t border-gray-100 pt-3">
-                  <p className="text-sm font-800 text-[#172033]">{user.name}</p>
-                  <p className="mb-3 text-xs text-slate-500">{user.email}</p>
+                <div className="mt-2 border-t border-white/10 pt-4">
+                  <p className="text-[15px] font-bold text-white px-3">{user.name}</p>
+                  <p className="mb-3 text-xs text-gray-400 px-3">{user.email}</p>
                   <Link
                     to="/profile"
                     onClick={() => setOpen(false)}
-                    className={`mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-700 ${
+                    className={`mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium ${
                       pathname === '/profile'
-                        ? 'bg-[#d84e55]/10 text-[#d84e55]'
-                        : 'text-[#172033] hover:bg-slate-100'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <FaIdBadge /> Profile
+                    <FaIdBadge className={pathname === '/profile' ? 'text-primary' : 'text-gray-400'} /> Profile
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-700 text-red-600 hover:bg-red-50"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[15px] font-medium text-danger hover:bg-danger/10 transition-colors"
                   >
                     <FaSignOutAlt /> Logout
                   </button>
                 </div>
               </>
             ) : (
-              <>
-                <Link to="/login" onClick={() => setOpen(false)} className="btn-outline">Login</Link>
-                <Link to="/register" onClick={() => setOpen(false)} className="btn-primary">Register</Link>
-              </>
+              <div className="flex flex-col gap-3 mt-2">
+                <Link to="/login" onClick={() => setOpen(false)} className="btn-outline w-full bg-white/5 text-white hover:bg-white/10 border border-white/10">Login</Link>
+                <Link to="/register" onClick={() => setOpen(false)} className="btn-primary w-full">Register</Link>
+              </div>
             )}
           </div>
         </div>

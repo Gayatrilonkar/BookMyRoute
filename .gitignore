@@ -10,6 +10,7 @@ backend/.settings/
 backend/.classpath
 backend/.factorypath
 backend/.project
+.metadata/
 *.class
 *.jar
 *.war

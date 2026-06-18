@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface BusRepository extends JpaRepository<Bus, Long> {
     Optional<Bus> findByBusNumber(String busNumber);
+    boolean existsByBusNumber(String busNumber);
     List<Bus> findAllByIsActiveTrue();
     List<Bus> findAllByBusType(BusType busType);
     long countByIsActiveTrue();

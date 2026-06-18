@@ -17,6 +17,10 @@ public class BookingResponse {
     private String customerEmail;
     private String origin;
     private String destination;
+    private String pickupStopName;
+    private String dropStopName;
+    private String pickupSubLocationName;
+    private String dropSubLocationName;
     private LocalDateTime departureTime;
     private LocalDateTime arrivalTime;
     private String busName;
@@ -44,6 +48,10 @@ public class BookingResponse {
         private String customerEmail;
         private String origin;
         private String destination;
+        private String pickupStopName;
+        private String dropStopName;
+        private String pickupSubLocationName;
+        private String dropSubLocationName;
         private LocalDateTime departureTime;
         private LocalDateTime arrivalTime;
         private String busName;
@@ -66,6 +74,10 @@ public class BookingResponse {
         public Builder customerEmail(String customerEmail) { this.customerEmail = customerEmail; return this; }
         public Builder origin(String origin) { this.origin = origin; return this; }
         public Builder destination(String destination) { this.destination = destination; return this; }
+        public Builder pickupStopName(String pickupStopName) { this.pickupStopName = pickupStopName; return this; }
+        public Builder dropStopName(String dropStopName) { this.dropStopName = dropStopName; return this; }
+        public Builder pickupSubLocationName(String pickupSubLocationName) { this.pickupSubLocationName = pickupSubLocationName; return this; }
+        public Builder dropSubLocationName(String dropSubLocationName) { this.dropSubLocationName = dropSubLocationName; return this; }
         public Builder departureTime(LocalDateTime departureTime) { this.departureTime = departureTime; return this; }
         public Builder arrivalTime(LocalDateTime arrivalTime) { this.arrivalTime = arrivalTime; return this; }
         public Builder busName(String busName) { this.busName = busName; return this; }
@@ -87,6 +99,8 @@ public class BookingResponse {
             r.routeId = this.routeId;
             r.customerName = this.customerName; r.customerEmail = this.customerEmail;
             r.origin = this.origin; r.destination = this.destination;
+            r.pickupStopName = this.pickupStopName; r.dropStopName = this.dropStopName;
+            r.pickupSubLocationName = this.pickupSubLocationName; r.dropSubLocationName = this.dropSubLocationName;
             r.departureTime = this.departureTime; r.arrivalTime = this.arrivalTime;
             r.busName = this.busName; r.totalAmount = this.totalAmount;
             r.bookingStatus = this.bookingStatus; r.paymentStatus = this.paymentStatus;
@@ -112,6 +126,14 @@ public class BookingResponse {
     public void setOrigin(String origin) { this.origin = origin; }
     public String getDestination() { return destination; }
     public void setDestination(String destination) { this.destination = destination; }
+    public String getPickupStopName() { return pickupStopName; }
+    public void setPickupStopName(String pickupStopName) { this.pickupStopName = pickupStopName; }
+    public String getDropStopName() { return dropStopName; }
+    public void setDropStopName(String dropStopName) { this.dropStopName = dropStopName; }
+    public String getPickupSubLocationName() { return pickupSubLocationName; }
+    public void setPickupSubLocationName(String pickupSubLocationName) { this.pickupSubLocationName = pickupSubLocationName; }
+    public String getDropSubLocationName() { return dropSubLocationName; }
+    public void setDropSubLocationName(String dropSubLocationName) { this.dropSubLocationName = dropSubLocationName; }
     public LocalDateTime getDepartureTime() { return departureTime; }
     public void setDepartureTime(LocalDateTime departureTime) { this.departureTime = departureTime; }
     public LocalDateTime getArrivalTime() { return arrivalTime; }

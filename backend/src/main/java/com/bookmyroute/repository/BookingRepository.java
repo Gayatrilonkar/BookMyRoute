@@ -88,4 +88,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                     @Param("userId") Long userId,
                                     @Param("from") LocalDateTime from,
                                     @Param("to") LocalDateTime to);
+
+    long countByStatus(BookingStatus status);
+    long countByBookedAtBetween(LocalDateTime start, LocalDateTime end);
 }

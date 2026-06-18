@@ -8,11 +8,13 @@ import com.bookmyroute.dto.response.PagedResponse;
 import com.bookmyroute.entity.*;
 import com.bookmyroute.enums.BookingStatus;
 import com.bookmyroute.enums.PaymentStatus;
+import com.bookmyroute.enums.SeatType;
 import com.bookmyroute.exception.BusinessException;
 import com.bookmyroute.exception.ResourceNotFoundException;
 import com.bookmyroute.repository.*;
 import com.bookmyroute.service.BookingService;
 import com.bookmyroute.service.EmailService;
+import com.bookmyroute.service.ScheduleService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,8 +28,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -48,16 +52,27 @@ public class BookingServiceImpl implements BookingService {
                               UserRepository userRepository,
                               PaymentRepository paymentRepository,
                               RouteReviewRepository routeReviewRepository,
-                              EmailService emailService) {
+                              BookingSeatRepository bookingSeatRepository,
+                              PickupLocationRepository pickupLocationRepository,
+                              DropLocationRepository dropLocationRepository,
+                              PickupSubLocationRepository pickupSubLocationRepository,
+                              DropSubLocationRepository dropSubLocationRepository,
+                              EmailService emailService,
+                              ScheduleService scheduleService) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
         this.seatRepository = seatRepository;
         this.userRepository = userRepository;
         this.paymentRepository = paymentRepository;
         this.routeReviewRepository = routeReviewRepository;
+        this.bookingSeatRepository = bookingSeatRepository;
+        this.pickupLocationRepository = pickupLocationRepository;
+        this.dropLocationRepository = dropLocationRepository;
+        this.pickupSubLocationRepository = pickupSubLocationRepository;
+        this.dropSubLocationRepository = dropSubLocationRepository;
         this.emailService = emailService;
+        this.scheduleService = scheduleService;
     }
-
 
     private final BookingRepository bookingRepository;
     private final ScheduleRepository scheduleRepository;
@@ -65,7 +80,13 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final RouteReviewRepository routeReviewRepository;
+    private final BookingSeatRepository bookingSeatRepository;
+    private final PickupLocationRepository pickupLocationRepository;
+    private final DropLocationRepository dropLocationRepository;
+    private final PickupSubLocationRepository pickupSubLocationRepository;
+    private final DropSubLocationRepository dropSubLocationRepository;
     private final EmailService emailService;
+    private final ScheduleService scheduleService;
 
     @Override
     @Transactional
@@ -83,7 +104,32 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessException("Not enough seats available");
         }
 
-        // Build booking seats & calculate total
+        validateRequestedSeats(schedule, request.getPassengers());
+
+        PickupLocation pickupLocation = null;
+        if (request.getPickupLocationId() != null) {
+            pickupLocation = pickupLocationRepository.findById(request.getPickupLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Pickup Location", request.getPickupLocationId()));
+        }
+
+        DropLocation dropLocation = null;
+        if (request.getDropLocationId() != null) {
+            dropLocation = dropLocationRepository.findById(request.getDropLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Drop Location", request.getDropLocationId()));
+        }
+
+        PickupSubLocation pickupSubLoc = null;
+        if (request.getPickupSubLocationId() != null) {
+            pickupSubLoc = pickupSubLocationRepository.findById(request.getPickupSubLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Pickup SubLocation", request.getPickupSubLocationId()));
+        }
+
+        DropSubLocation dropSubLoc = null;
+        if (request.getDropSubLocationId() != null) {
+            dropSubLoc = dropSubLocationRepository.findById(request.getDropSubLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Drop SubLocation", request.getDropSubLocationId()));
+        }
+
         List<BookingSeat> bookingSeats = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
 
@@ -95,10 +141,11 @@ public class BookingServiceImpl implements BookingService {
                     .seat(seat)
                     .passengerName(ps.getPassengerName())
                     .passengerAge(ps.getPassengerAge())
-                    .fare(schedule.getBaseFare())
+                    .passengerGender(ps.getPassengerGender())
+                    .fare(calculateFare(schedule, seat))
                     .build();
             bookingSeats.add(bs);
-            total = total.add(schedule.getBaseFare());
+            total = total.add(calculateFare(schedule, seat));
         }
 
         Booking booking = Booking.builder()
@@ -107,12 +154,19 @@ public class BookingServiceImpl implements BookingService {
                 .bookingRef(generateRef())
                 .totalAmount(total)
                 .status(BookingStatus.CONFIRMED)
+                .pickupLocation(pickupLocation)
+                .dropLocation(dropLocation)
+                .pickupSubLocation(pickupSubLoc)
+                .dropSubLocation(dropSubLoc)
+                .pickupLocationName(pickupLocation != null ? pickupLocation.getPickupName() : null)
+                .dropLocationName(dropLocation != null ? dropLocation.getDropName() : null)
+                .pickupSubLocationName(pickupSubLoc != null ? pickupSubLoc.getSubLocationName() : null)
+                .dropSubLocationName(dropSubLoc != null ? dropSubLoc.getSubLocationName() : null)
                 .build();
 
         bookingSeats.forEach(bs -> bs.setBooking(booking));
         booking.setBookingSeats(bookingSeats);
 
-        // Payment record
         Payment payment = Payment.builder()
                 .booking(booking)
                 .paymentMethod(request.getPaymentMethod())
@@ -122,12 +176,17 @@ public class BookingServiceImpl implements BookingService {
                 .build();
         booking.setPayment(payment);
 
-        // Decrement available seats
         schedule.setAvailableSeats(schedule.getAvailableSeats() - request.getPassengers().size());
         scheduleRepository.save(schedule);
 
         Booking saved = bookingRepository.save(booking);
         EmailDeliveryResponse emailDelivery = emailService.sendBookingConfirmation(saved);
+
+        try {
+            scheduleService.broadcastSeatUpdates(schedule.getId());
+        } catch (Exception ignored) {
+        }
+
         return toResponse(saved, emailDelivery);
     }
 
@@ -200,18 +259,21 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
 
-        // Restore seats
         Schedule schedule = booking.getSchedule();
         schedule.setAvailableSeats(schedule.getAvailableSeats() + booking.getBookingSeats().size());
         scheduleRepository.save(schedule);
 
-        // Initiate refund
         if (booking.getPayment() != null) {
             booking.getPayment().setStatus(PaymentStatus.REFUNDED);
         }
 
         Booking saved = bookingRepository.save(booking);
         EmailDeliveryResponse emailDelivery = emailService.sendBookingCancellation(saved);
+
+        try {
+            scheduleService.broadcastSeatUpdates(schedule.getId());
+        } catch (Exception ignored) {
+        }
 
         return toResponse(saved, emailDelivery);
     }
@@ -222,8 +284,6 @@ public class BookingServiceImpl implements BookingService {
         markPastBookingsCompleted();
         return bookingRepository.findAll().stream().map(this::toResponse).toList();
     }
-
-    // ── Helpers ─────────────────────────────────────────────────────────────
 
     private String generateRef() {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -242,6 +302,29 @@ public class BookingServiceImpl implements BookingService {
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             throw new BusinessException("From date cannot be after to date");
         }
+    }
+
+    private void validateRequestedSeats(Schedule schedule, List<BookingRequest.PassengerSeat> passengers) {
+        Set<Long> seenSeatIds = new HashSet<>();
+        for (BookingRequest.PassengerSeat passenger : passengers) {
+            Long seatId = passenger.getSeatId();
+            if (!seenSeatIds.add(seatId)) {
+                throw new BusinessException("Seat selected more than once");
+            }
+
+            Seat seat = seatRepository.findById(seatId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Seat", seatId));
+            if (!seat.getBus().getId().equals(schedule.getBus().getId())) {
+                throw new BusinessException("Seat does not belong to this bus");
+            }
+            if (bookingSeatRepository.existsActiveBookingForSeat(schedule.getId(), seatId)) {
+                throw new BusinessException("Seat " + seat.getSeatNumber() + " is already booked");
+            }
+        }
+    }
+
+    private BigDecimal calculateFare(Schedule schedule, Seat seat) {
+        return schedule.getBaseFare();
     }
 
     private LocalDateTime startOfDay(LocalDate date) {
@@ -286,6 +369,10 @@ public class BookingServiceImpl implements BookingService {
                 .customerEmail(b.getUser().getEmail())
                 .origin(b.getSchedule().getRoute().getOrigin())
                 .destination(b.getSchedule().getRoute().getDestination())
+                .pickupStopName(b.getPickupLocationName())
+                .dropStopName(b.getDropLocationName())
+                .pickupSubLocationName(b.getPickupSubLocationName())
+                .dropSubLocationName(b.getDropSubLocationName())
                 .departureTime(b.getSchedule().getDepartureTime())
                 .arrivalTime(b.getSchedule().getArrivalTime())
                 .busName(b.getSchedule().getBus().getBusName())

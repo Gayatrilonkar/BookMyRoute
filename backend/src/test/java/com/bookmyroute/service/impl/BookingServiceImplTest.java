@@ -10,6 +10,7 @@ import com.bookmyroute.entity.User;
 import com.bookmyroute.enums.BookingStatus;
 import com.bookmyroute.exception.BusinessException;
 import com.bookmyroute.repository.BookingRepository;
+import com.bookmyroute.repository.BookingSeatRepository;
 import com.bookmyroute.repository.PaymentRepository;
 import com.bookmyroute.repository.RouteReviewRepository;
 import com.bookmyroute.repository.ScheduleRepository;
@@ -59,6 +60,9 @@ class BookingServiceImplTest {
 
     @Mock
     private RouteReviewRepository routeReviewRepository;
+
+    @Mock
+    private BookingSeatRepository bookingSeatRepository;
 
     @Mock
     private EmailService emailService;

@@ -14,6 +14,10 @@ import com.bookmyroute.entity.Bus;
 import com.bookmyroute.entity.Booking;
 import com.bookmyroute.entity.Payment;
 import com.bookmyroute.entity.Route;
+import com.bookmyroute.entity.PickupLocation;
+import com.bookmyroute.entity.PickupSubLocation;
+import com.bookmyroute.entity.DropLocation;
+import com.bookmyroute.entity.DropSubLocation;
 import com.bookmyroute.entity.Schedule;
 import com.bookmyroute.entity.User;
 import com.bookmyroute.enums.BookingStatus;
@@ -45,6 +49,8 @@ public class AdminServiceImpl implements AdminService {
     private final RouteRepository routeRepository;
     private final ScheduleRepository scheduleRepository;
     private final EmailService emailService;
+    private final com.bookmyroute.repository.SystemSettingRepository systemSettingRepository;
+    private final com.bookmyroute.repository.AdminActionLogRepository adminActionLogRepository;
 
     public AdminServiceImpl(UserRepository userRepository,
                             BookingRepository bookingRepository,
@@ -52,7 +58,9 @@ public class AdminServiceImpl implements AdminService {
                             BusRepository busRepository,
                             RouteRepository routeRepository,
                             ScheduleRepository scheduleRepository,
-                            EmailService emailService) {
+                            EmailService emailService,
+                            com.bookmyroute.repository.SystemSettingRepository systemSettingRepository,
+                            com.bookmyroute.repository.AdminActionLogRepository adminActionLogRepository) {
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
@@ -60,6 +68,8 @@ public class AdminServiceImpl implements AdminService {
         this.routeRepository = routeRepository;
         this.scheduleRepository = scheduleRepository;
         this.emailService = emailService;
+        this.systemSettingRepository = systemSettingRepository;
+        this.adminActionLogRepository = adminActionLogRepository;
     }
 
     @Override
@@ -67,15 +77,38 @@ public class AdminServiceImpl implements AdminService {
     public AdminDashboardResponse getDashboard() {
         markPastBookingsCompleted();
         AdminDashboardResponse response = new AdminDashboardResponse();
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+        LocalDateTime startOfWeek = now.toLocalDate().minusDays(now.getDayOfWeek().getValue() - 1).atStartOfDay();
+        LocalDateTime startOfMonth = now.toLocalDate().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime startOfYear = now.toLocalDate().withDayOfYear(1).atStartOfDay();
+
+        // User Analytics
         response.setTotalUsers(userRepository.count());
         response.setActiveUsers(userRepository.countByIsActiveTrue());
+        response.setNewUsersToday(userRepository.countByCreatedAtAfter(startOfDay));
+        response.setNewUsersThisMonth(userRepository.countByCreatedAtAfter(startOfMonth));
+
+        // Booking Analytics
         response.setTotalBookings(bookingRepository.count());
-        response.setConfirmedBookings(bookingRepository.findAllByStatus(BookingStatus.CONFIRMED).size());
-        response.setCancelledBookings(bookingRepository.findAllByStatus(BookingStatus.CANCELLED).size());
+        response.setTodaysBookings(bookingRepository.countByBookedAtBetween(startOfDay, now));
+        response.setMonthlyBookings(bookingRepository.countByBookedAtBetween(startOfMonth, now));
+        response.setCancelledBookings(bookingRepository.countByStatus(BookingStatus.CANCELLED));
+        response.setCompletedBookings(bookingRepository.countByStatus(BookingStatus.COMPLETED));
+
+        // Revenue Analytics
+        response.setTodaysRevenue(calculateRevenueBetween(startOfDay, now));
+        response.setWeeklyRevenue(calculateRevenueBetween(startOfWeek, now));
+        response.setMonthlyRevenue(calculateRevenueBetween(startOfMonth, now));
+        response.setYearlyRevenue(calculateRevenueBetween(startOfYear, now));
+        response.setTotalRevenue(calculateRevenueBetween(null, null));
+
+        // Operation Analytics
         response.setActiveBuses(busRepository.countByIsActiveTrue());
         response.setTotalRoutes(routeRepository.count());
         response.setActiveSchedules(scheduleRepository.countByIsActiveTrue());
-        response.setTotalRevenue(calculateRevenue());
+        
         return response;
     }
 
@@ -86,6 +119,59 @@ public class AdminServiceImpl implements AdminService {
                 .filter(bus -> active == null || bus.getIsActive().equals(active))
                 .map(this::toBusResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public AdminBusResponse createBus(com.bookmyroute.dto.request.AdminBusRequest request) {
+        if (busRepository.existsByBusNumber(request.getBusNumber())) {
+            throw new com.bookmyroute.exception.BusinessException("Bus number already exists: " + request.getBusNumber());
+        }
+
+        Bus bus = Bus.builder()
+                .busNumber(request.getBusNumber())
+                .busName(request.getBusName())
+                .busType(request.getBusType())
+                .totalSeats(request.getTotalSeats())
+                .amenities(request.getAmenities())
+                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                .build();
+
+        return toBusResponse(busRepository.save(bus));
+    }
+
+    @Override
+    @Transactional
+    public AdminBusResponse updateBus(Long busId, com.bookmyroute.dto.request.AdminBusRequest request) {
+        Bus bus = busRepository.findById(busId)
+                .orElseThrow(() -> new com.bookmyroute.exception.ResourceNotFoundException("Bus", busId));
+
+        if (!bus.getBusNumber().equalsIgnoreCase(request.getBusNumber()) &&
+                busRepository.existsByBusNumber(request.getBusNumber())) {
+            throw new com.bookmyroute.exception.BusinessException("Bus number already exists: " + request.getBusNumber());
+        }
+
+        bus.setBusNumber(request.getBusNumber());
+        bus.setBusName(request.getBusName());
+        bus.setBusType(request.getBusType());
+        bus.setTotalSeats(request.getTotalSeats());
+        bus.setAmenities(request.getAmenities());
+        
+        if (request.getIsActive() != null) {
+            bus.setIsActive(request.getIsActive());
+        }
+
+        return toBusResponse(busRepository.save(bus));
+    }
+
+    @Override
+    @Transactional
+    public AdminBusResponse toggleBusStatus(Long busId) {
+        Bus bus = busRepository.findById(busId)
+                .orElseThrow(() -> new com.bookmyroute.exception.ResourceNotFoundException("Bus", busId));
+        
+        bus.setIsActive(!bus.getIsActive());
+        return toBusResponse(busRepository.save(bus));
     }
 
     @Override
@@ -104,7 +190,11 @@ public class AdminServiceImpl implements AdminService {
                 .destination(request.getDestination())
                 .distanceKm(request.getDistanceKm())
                 .durationMins(request.getDurationMins())
+                .isActive(request.getIsActive())
                 .build();
+        
+        mapPickupDropLocations(route, request.getPickupLocations(), request.getDropLocations());
+
         return toRouteResponse(routeRepository.save(route));
     }
 
@@ -117,7 +207,69 @@ public class AdminServiceImpl implements AdminService {
         route.setDestination(request.getDestination());
         route.setDistanceKm(request.getDistanceKm());
         route.setDurationMins(request.getDurationMins());
+        if (request.getIsActive() != null) {
+            route.setIsActive(request.getIsActive());
+        }
+        
+        route.getPickupLocations().clear();
+        route.getDropLocations().clear();
+        mapPickupDropLocations(route, request.getPickupLocations(), request.getDropLocations());
+        
         return toRouteResponse(routeRepository.save(route));
+    }
+
+    @Override
+    @Transactional
+    public void deleteRoute(Long routeId) {
+        Route route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Route", routeId));
+        routeRepository.delete(route);
+    }
+
+    private void mapPickupDropLocations(Route route, 
+            List<AdminRouteRequest.PickupLocationRequest> pickups,
+            List<AdminRouteRequest.DropLocationRequest> drops) {
+        if (pickups != null) {
+            for (AdminRouteRequest.PickupLocationRequest pReq : pickups) {
+                PickupLocation p = new PickupLocation();
+                p.setPickupName(pReq.getPickupName());
+                p.setPickupAddress(pReq.getPickupAddress());
+                p.setLandmark(pReq.getLandmark());
+                p.setPickupTime(pReq.getPickupTime());
+                p.setSequenceOrder(pReq.getSequenceOrder());
+                
+                if (pReq.getSubLocations() != null) {
+                    for (AdminRouteRequest.SubLocationRequest subReq : pReq.getSubLocations()) {
+                        PickupSubLocation sub = new PickupSubLocation();
+                        sub.setSubLocationName(subReq.getSubLocationName());
+                        sub.setSequenceOrder(subReq.getSequenceOrder());
+                        p.addSubLocation(sub);
+                    }
+                }
+                route.addPickupLocation(p);
+            }
+        }
+
+        if (drops != null) {
+            for (AdminRouteRequest.DropLocationRequest dReq : drops) {
+                DropLocation d = new DropLocation();
+                d.setDropName(dReq.getDropName());
+                d.setDropAddress(dReq.getDropAddress());
+                d.setLandmark(dReq.getLandmark());
+                d.setDropTime(dReq.getDropTime());
+                d.setSequenceOrder(dReq.getSequenceOrder());
+                
+                if (dReq.getSubLocations() != null) {
+                    for (AdminRouteRequest.SubLocationRequest subReq : dReq.getSubLocations()) {
+                        DropSubLocation sub = new DropSubLocation();
+                        sub.setSubLocationName(subReq.getSubLocationName());
+                        sub.setSequenceOrder(subReq.getSequenceOrder());
+                        d.addSubLocation(sub);
+                    }
+                }
+                route.addDropLocation(d);
+            }
+        }
     }
 
     @Override
@@ -137,16 +289,44 @@ public class AdminServiceImpl implements AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Route", request.getRouteId()));
         validateScheduleRequest(request, bus);
 
-        Schedule schedule = Schedule.builder()
-                .bus(bus)
-                .route(route)
-                .departureTime(request.getDepartureTime())
-                .arrivalTime(request.getArrivalTime())
-                .baseFare(request.getBaseFare())
-                .availableSeats(request.getAvailableSeats())
-                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
-                .build();
-        return toScheduleResponse(scheduleRepository.save(schedule));
+        List<Schedule> schedulesToSave = new java.util.ArrayList<>();
+        LocalDateTime currentDep = request.getDepartureTime();
+        LocalDateTime currentArr = request.getArrivalTime();
+        
+        long durationMins = java.time.Duration.between(currentDep, currentArr).toMinutes();
+
+        String recType = request.getRecurrenceType() != null ? request.getRecurrenceType() : "NONE";
+        java.time.LocalDate endDate = request.getRecurrenceEndDate() != null ? request.getRecurrenceEndDate() : currentDep.toLocalDate();
+
+        while (!currentDep.toLocalDate().isAfter(endDate)) {
+            if (scheduleRepository.hasConflict(bus.getId(), currentDep, currentArr, -1L)) {
+                throw new BusinessException("Schedule conflict detected for bus on " + currentDep);
+            }
+
+            Schedule schedule = Schedule.builder()
+                    .bus(bus)
+                    .route(route)
+                    .departureTime(currentDep)
+                    .arrivalTime(currentArr)
+                    .baseFare(request.getBaseFare())
+                    .availableSeats(request.getAvailableSeats())
+                    .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                    .build();
+            
+            schedulesToSave.add(schedule);
+
+            if ("DAILY".equalsIgnoreCase(recType)) {
+                currentDep = currentDep.plusDays(1);
+            } else if ("WEEKLY".equalsIgnoreCase(recType)) {
+                currentDep = currentDep.plusWeeks(1);
+            } else {
+                break;
+            }
+            currentArr = currentDep.plusMinutes(durationMins);
+        }
+
+        List<Schedule> saved = scheduleRepository.saveAll(schedulesToSave);
+        return toScheduleResponse(saved.get(0));
     }
 
     @Override
@@ -159,6 +339,10 @@ public class AdminServiceImpl implements AdminService {
         Route route = routeRepository.findById(request.getRouteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Route", request.getRouteId()));
         validateScheduleRequest(request, bus);
+
+        if (scheduleRepository.hasConflict(bus.getId(), request.getDepartureTime(), request.getArrivalTime(), scheduleId)) {
+            throw new BusinessException("Schedule conflict detected for bus on " + request.getDepartureTime());
+        }
 
         schedule.setBus(bus);
         schedule.setRoute(route);
@@ -252,8 +436,13 @@ public class AdminServiceImpl implements AdminService {
         return toBookingResponse(saved, emailDelivery);
     }
 
-    private BigDecimal calculateRevenue() {
-        return paymentRepository.findAllByStatus(PaymentStatus.SUCCESS).stream()
+    private BigDecimal calculateRevenueBetween(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) {
+            return paymentRepository.findAllByStatus(PaymentStatus.SUCCESS).stream()
+                    .map(Payment::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        return paymentRepository.findAllByStatusAndPaidAtBetween(PaymentStatus.SUCCESS, start, end).stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -275,6 +464,34 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.bookmyroute.entity.SystemSetting> getSettings() {
+        return systemSettingRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public List<com.bookmyroute.entity.SystemSetting> updateSettings(java.util.Map<String, String> settings) {
+        settings.forEach((key, value) -> {
+            com.bookmyroute.entity.SystemSetting setting = systemSettingRepository.findById(key)
+                    .orElseGet(() -> {
+                        com.bookmyroute.entity.SystemSetting s = new com.bookmyroute.entity.SystemSetting();
+                        s.setSettingKey(key);
+                        return s;
+                    });
+            setting.setSettingValue(value);
+            systemSettingRepository.save(setting);
+        });
+        return systemSettingRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.bookmyroute.entity.AdminActionLog> getLogs() {
+        return adminActionLogRepository.findAll();
+    }
+
     private AdminBusResponse toBusResponse(Bus bus) {
         AdminBusResponse response = new AdminBusResponse();
         response.setBusId(bus.getId());
@@ -294,6 +511,23 @@ public class AdminServiceImpl implements AdminService {
         response.setDestination(route.getDestination());
         response.setDistanceKm(route.getDistanceKm());
         response.setDurationMins(route.getDurationMins());
+        response.setIsActive(route.getIsActive());
+        response.setCreatedAt(route.getCreatedAt());
+        response.setUpdatedAt(route.getUpdatedAt());
+        // Initialize lazy collections
+        if (route.getPickupLocations() != null) {
+            route.getPickupLocations().forEach(loc -> {
+                if (loc.getSubLocations() != null) loc.getSubLocations().size();
+            });
+        }
+        if (route.getDropLocations() != null) {
+            route.getDropLocations().forEach(loc -> {
+                if (loc.getSubLocations() != null) loc.getSubLocations().size();
+            });
+        }
+
+        response.setPickupLocations(route.getPickupLocations());
+        response.setDropLocations(route.getDropLocations());
         return response;
     }
 
@@ -341,6 +575,10 @@ public class AdminServiceImpl implements AdminService {
                 .customerEmail(booking.getUser().getEmail())
                 .origin(booking.getSchedule().getRoute().getOrigin())
                 .destination(booking.getSchedule().getRoute().getDestination())
+                .pickupStopName(booking.getPickupLocationName())
+                .dropStopName(booking.getDropLocationName())
+                .pickupSubLocationName(booking.getPickupSubLocationName())
+                .dropSubLocationName(booking.getDropSubLocationName())
                 .departureTime(booking.getSchedule().getDepartureTime())
                 .arrivalTime(booking.getSchedule().getArrivalTime())
                 .busName(booking.getSchedule().getBus().getBusName())

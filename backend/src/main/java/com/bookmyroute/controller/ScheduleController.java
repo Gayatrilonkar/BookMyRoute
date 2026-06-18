@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/schedules")
@@ -52,6 +53,11 @@ public class ScheduleController {
     public ResponseEntity<ApiResponse<List<ScheduleResponse.SeatInfo>>> getAvailableSeats(
             @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(scheduleService.getAvailableSeats(id)));
+    }
+
+    @GetMapping("/{id}/seats/stream")
+    public SseEmitter streamAvailableSeats(@PathVariable Long id) {
+        return scheduleService.subscribeToSeats(id);
     }
 
     @DeleteMapping("/{id}")

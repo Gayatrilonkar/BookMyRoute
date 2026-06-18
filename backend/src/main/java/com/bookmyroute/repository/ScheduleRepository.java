@@ -54,4 +54,28 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
         ORDER BY s.departureTime
         """)
     List<Schedule> findUpcomingActiveSchedules(@Param("from") LocalDateTime from, Pageable pageable);
+
+    @Query("""
+        SELECT COUNT(s) > 0 FROM Schedule s
+        WHERE s.bus.id = :busId
+          AND s.isActive = true
+          AND s.id != :excludeScheduleId
+          AND s.departureTime < :newArrival
+          AND s.arrivalTime > :newDeparture
+        """)
+    boolean hasConflict(@Param("busId") Long busId,
+                        @Param("newDeparture") LocalDateTime newDeparture,
+                        @Param("newArrival") LocalDateTime newArrival,
+                        @Param("excludeScheduleId") Long excludeScheduleId);
+
+    @Query("""
+        SELECT COUNT(s) > 0 FROM Schedule s
+        WHERE s.bus.id = :busId
+          AND s.isActive = true
+          AND s.departureTime < :newArrival
+          AND s.arrivalTime > :newDeparture
+        """)
+    boolean hasConflictNew(@Param("busId") Long busId,
+                           @Param("newDeparture") LocalDateTime newDeparture,
+                           @Param("newArrival") LocalDateTime newArrival);
 }

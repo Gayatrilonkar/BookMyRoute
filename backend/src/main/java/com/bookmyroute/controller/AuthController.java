@@ -48,16 +48,6 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "Login successful"));
     }
 
-    @PostMapping("/admin/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> adminLogin(
-            @Valid @RequestBody AuthRequest.Login request) {
-        AuthResponse response = authService.login(request);
-        if (response.getRole() != Role.ADMIN) {
-            throw new AccessDeniedException("Only admin users can access the admin panel");
-        }
-        return ResponseEntity.ok(ApiResponse.success(response, "Admin login successful"));
-    }
-
     /**
      * GET /api/auth/me
      * Returns the current logged-in user's profile.

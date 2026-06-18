@@ -11,5 +11,7 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByBookingId(Long bookingId);
+    Optional<Payment> findByRazorpayOrderId(String razorpayOrderId);
     List<Payment> findAllByStatus(PaymentStatus status);
+    List<Payment> findAllByStatusAndPaidAtBetween(PaymentStatus status, java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

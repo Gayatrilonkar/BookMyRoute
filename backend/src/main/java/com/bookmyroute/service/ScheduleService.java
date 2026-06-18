@@ -13,4 +13,6 @@ public interface ScheduleService {
     List<ScheduleResponse.Search> searchSchedules(ScheduleSearchRequest request);
     List<ScheduleResponse.SeatInfo> getAvailableSeats(Long scheduleId);
     void deactivateSchedule(Long id);
+    org.springframework.web.servlet.mvc.method.annotation.SseEmitter subscribeToSeats(Long scheduleId);
+    void broadcastSeatUpdates(Long scheduleId);
 }

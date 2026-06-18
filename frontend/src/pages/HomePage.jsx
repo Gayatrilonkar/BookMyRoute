@@ -68,28 +68,28 @@ export default function HomePage() {
   return (
     <div className="page-shell">
       <section
-        className="relative bg-[#172033] text-white"
+        className="relative bg-secondary text-white"
         style={{
           backgroundImage:
-            'linear-gradient(90deg, rgba(23,32,51,0.94), rgba(23,32,51,0.74)), url(https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1800&q=80)',
+            'linear-gradient(90deg, rgba(26,35,50,0.94), rgba(26,35,50,0.74)), url(https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1800&q=80)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
         <div className="section-wrap py-16 lg:py-20">
           <div className="max-w-3xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-700 text-white">
-              <FaStar className="text-[#f59e0b]" /> Trusted intercity bus booking
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[15px] font-medium text-white shadow-sm">
+              <FaStar className="text-warning" /> Trusted intercity bus booking
             </div>
-            <h1 className="max-w-2xl text-4xl font-800 leading-tight md:text-6xl">
+            <h1 className="max-w-2xl text-4xl font-bold leading-tight md:text-6xl text-white">
               Book bus tickets with clarity and confidence.
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-7 text-gray-300 md:text-lg">
               Search routes, compare fares, pick seats and manage bookings from one clean dashboard.
             </p>
           </div>
 
-          <form onSubmit={handleSearch} className="relative z-20 mt-10 rounded-xl bg-white p-3 shadow-2xl">
+          <form onSubmit={handleSearch} className="relative z-20 mt-10 rounded-xl bg-white p-4 shadow-xl">
             <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr_0.8fr_auto] lg:items-end">
               <div>
                 <CitySearchInput
@@ -97,7 +97,7 @@ export default function HomePage() {
                   value={form.from}
                   onChange={set('from')}
                   cities={cities}
-                  accent="#d84e55"
+                  accent="var(--color-primary)"
                   placeholder="Search origin city"
                 />
               </div>
@@ -105,7 +105,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={swap}
-                className="hidden h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-[#172033] hover:border-[#d84e55] hover:text-[#d84e55] lg:flex"
+                className="hidden h-[44px] w-[44px] items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-secondary hover:border-primary hover:text-primary transition-colors lg:flex"
                 aria-label="Swap origin and destination"
               >
                 <MdSwapHoriz className="text-xl" />
@@ -117,7 +117,7 @@ export default function HomePage() {
                   value={form.to}
                   onChange={set('to')}
                   cities={cities}
-                  accent="#2563eb"
+                  accent="var(--color-accent)"
                   placeholder="Search destination city"
                 />
               </div>
@@ -146,7 +146,7 @@ export default function HomePage() {
                   date.setDate(date.getDate() + offset)
                   setForm(prev => ({ ...prev, date: format(date, 'yyyy-MM-dd') }))
                 }}
-                className="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-700 text-white hover:bg-white/20"
+                className="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-medium text-[13px] text-white hover:bg-white/20 transition-colors"
               >
                 {label}
               </button>
@@ -156,15 +156,15 @@ export default function HomePage() {
       </section>
 
       <section className="section-wrap -mt-7 relative z-10">
-        <div className="grid gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-lg md:grid-cols-3">
+        <div className="grid gap-4 rounded-xl border border-border-light bg-white p-4 shadow-md md:grid-cols-3">
           {SERVICES.map(({ icon, title, desc }) => (
-            <div key={title} className="flex gap-3 p-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#d84e55]/10 text-[#d84e55]">
+            <div key={title} className="flex gap-4 p-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 {icon}
               </div>
               <div>
-                <p className="font-800 text-[#172033]">{title}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">{desc}</p>
+                <p className="font-bold text-secondary">{title}</p>
+                <p className="mt-1 text-sm leading-6 text-text-muted">{desc}</p>
               </div>
             </div>
           ))}
@@ -174,19 +174,19 @@ export default function HomePage() {
       <section className="section-wrap py-12">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-800 text-[#172033]">Offers for your next trip</h2>
-            <p className="mt-1 text-sm text-slate-500">Simple deals, easy to scan before booking.</p>
+            <h2 className="text-2xl font-bold text-secondary">Offers for your next trip</h2>
+            <p className="mt-1 text-sm text-text-muted">Simple deals, easy to scan before booking.</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {OFFERS.map(offer => (
-            <div key={offer.code} className="card-hover p-5">
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[#f59e0b]/10 text-[#f59e0b]">
+            <div key={offer.code} className="card-hover p-6">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
                 <FaTag />
               </div>
-              <h3 className="font-800 text-[#172033]">{offer.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{offer.desc}</p>
-              <p className="mt-4 inline-flex rounded-md bg-slate-100 px-3 py-1 font-mono text-xs font-800 text-slate-700">
+              <h3 className="font-bold text-secondary">{offer.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-text-muted">{offer.desc}</p>
+              <p className="mt-4 inline-flex rounded-md bg-gray-100 px-3 py-1 font-mono text-xs font-bold text-gray-700 border border-gray-200">
                 {offer.code}
               </p>
             </div>
@@ -197,8 +197,8 @@ export default function HomePage() {
       <section className="section-wrap pb-16">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-800 text-[#172033]">Popular routes</h2>
-            <p className="mt-1 text-sm text-slate-500">Frequently booked city pairs.</p>
+            <h2 className="text-2xl font-bold text-secondary">Popular routes</h2>
+            <p className="mt-1 text-sm text-text-muted">Frequently booked city pairs.</p>
           </div>
           <Link to={user ? '/search' : '/login'} className="btn-outline hidden sm:inline-flex">View all routes</Link>
         </div>
@@ -215,18 +215,18 @@ export default function HomePage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-800 uppercase text-slate-400">From</p>
-                  <p className="truncate text-lg font-800 text-[#172033]">{route.from}</p>
+                  <p className="text-xs font-bold uppercase text-text-muted">From</p>
+                  <p className="truncate text-[17px] font-bold text-secondary">{route.from}</p>
                 </div>
-                <FaBusAlt className="shrink-0 text-[#d84e55]" />
+                <FaBusAlt className="shrink-0 text-primary" />
                 <div className="min-w-0 text-right">
-                  <p className="text-xs font-800 uppercase text-slate-400">To</p>
-                  <p className="truncate text-lg font-800 text-[#172033]">{route.to}</p>
+                  <p className="text-xs font-bold uppercase text-text-muted">To</p>
+                  <p className="truncate text-[17px] font-bold text-secondary">{route.to}</p>
                 </div>
               </div>
-              <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
-                <span className="text-slate-500">{route.duration}</span>
-                <span className="font-800 text-[#d84e55]">from Rs {route.price}</span>
+              <div className="mt-4 flex items-center justify-between border-t border-border-light pt-4 text-sm">
+                <span className="text-text-muted font-medium">{route.duration}</span>
+                <span className="font-bold text-secondary font-mono">₹{route.price}</span>
               </div>
             </Link>
           ))}

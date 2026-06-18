@@ -52,7 +52,7 @@ public class SecurityConfig {
                 // ── Public endpoints ──────────────────────────────────────
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/admin/login").permitAll()
+
                 .requestMatchers(HttpMethod.POST, "/api/auth/oauth/google").permitAll()  // Google OAuth
                 .requestMatchers(HttpMethod.GET,  "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/support/requests").permitAll()
@@ -66,6 +66,8 @@ public class SecurityConfig {
 
                 // Public search & browse
                 .requestMatchers(HttpMethod.GET, "/api/schedules/search").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/schedules/*/seats").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/schedules/*/seats/stream").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/routes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/reviews/routes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/buses/**").permitAll()

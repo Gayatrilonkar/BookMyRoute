@@ -31,6 +31,10 @@ public class AdminScheduleRequest {
 
     private Boolean isActive = true;
 
+    private String recurrenceType; // NONE, DAILY, WEEKLY
+
+    private java.time.LocalDate recurrenceEndDate;
+
     public AdminScheduleRequest() {}
 
     public Long getBusId() { return busId; }
@@ -47,4 +51,8 @@ public class AdminScheduleRequest {
     public void setAvailableSeats(Integer availableSeats) { this.availableSeats = availableSeats; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public String getRecurrenceType() { return recurrenceType; }
+    public void setRecurrenceType(String recurrenceType) { this.recurrenceType = recurrenceType; }
+    public java.time.LocalDate getRecurrenceEndDate() { return recurrenceEndDate; }
+    public void setRecurrenceEndDate(java.time.LocalDate recurrenceEndDate) { this.recurrenceEndDate = recurrenceEndDate; }
 }

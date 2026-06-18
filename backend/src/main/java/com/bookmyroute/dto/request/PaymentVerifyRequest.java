@@ -31,6 +31,11 @@ public class PaymentVerifyRequest {
     @NotNull
     private PaymentMethod paymentMethod;
 
+    private Long pickupLocationId;
+    private Long dropLocationId;
+    private Long pickupSubLocationId;
+    private Long dropSubLocationId;
+
     public PaymentVerifyRequest() {}
 
     public String getRazorpayOrderId() { return razorpayOrderId; }
@@ -45,4 +50,12 @@ public class PaymentVerifyRequest {
     public void setPassengers(List<BookingRequest.PassengerSeat> passengers) { this.passengers = passengers; }
     public PaymentMethod getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+    public Long getPickupLocationId() { return pickupLocationId; }
+    public void setPickupLocationId(Long pickupLocationId) { this.pickupLocationId = pickupLocationId; }
+    public Long getDropLocationId() { return dropLocationId; }
+    public void setDropLocationId(Long dropLocationId) { this.dropLocationId = dropLocationId; }
+    public Long getPickupSubLocationId() { return pickupSubLocationId; }
+    public void setPickupSubLocationId(Long pickupSubLocationId) { this.pickupSubLocationId = pickupSubLocationId; }
+    public Long getDropSubLocationId() { return dropSubLocationId; }
+    public void setDropSubLocationId(Long dropSubLocationId) { this.dropSubLocationId = dropSubLocationId; }
 }

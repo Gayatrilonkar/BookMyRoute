@@ -141,8 +141,7 @@ export function AuthProvider({ children }) {
   const login = (email, password) =>
     loginWithEndpoint('/auth/login', email, password)
 
-  const adminLogin = (email, password) =>
-    loginWithEndpoint('/auth/admin/login', email, password)
+
 
   const register = async (payload) => {
     const res = await api.post('/auth/register', payload)
@@ -208,7 +207,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      login, adminLogin, register,
+      login, register,
       googleLogin,
       logout, updateUser,
       isAdmin: isAdminRole(user?.role)

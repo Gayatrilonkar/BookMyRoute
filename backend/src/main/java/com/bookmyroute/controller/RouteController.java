@@ -1,6 +1,7 @@
 package com.bookmyroute.controller;
 
 import com.bookmyroute.dto.response.ApiResponse;
+import com.bookmyroute.dto.response.RouteResponse;
 import com.bookmyroute.entity.Route;
 import com.bookmyroute.service.RouteService;
 import org.springframework.http.HttpStatus;
@@ -33,8 +34,8 @@ public class RouteController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Route>> getRoute(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(routeService.getRouteById(id)));
+    public ResponseEntity<ApiResponse<RouteResponse>> getRoute(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(routeService.getRouteDetails(id)));
     }
 
     @GetMapping("/search")

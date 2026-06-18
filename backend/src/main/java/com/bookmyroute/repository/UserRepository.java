@@ -16,4 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Used by AdminServiceImpl.getDashboard()
     long countByIsActiveTrue();
+    long countByCreatedAtAfter(java.time.LocalDateTime date);
 }

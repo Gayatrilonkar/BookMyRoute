@@ -18,9 +18,13 @@ import java.util.List;
 public interface AdminService {
     AdminDashboardResponse getDashboard();
     List<AdminBusResponse> getBuses(Boolean active);
+    AdminBusResponse createBus(com.bookmyroute.dto.request.AdminBusRequest request);
+    AdminBusResponse updateBus(Long busId, com.bookmyroute.dto.request.AdminBusRequest request);
+    AdminBusResponse toggleBusStatus(Long busId);
     List<AdminRouteResponse> getRoutes();
     AdminRouteResponse createRoute(AdminRouteRequest request);
     AdminRouteResponse updateRoute(Long routeId, AdminRouteRequest request);
+    void deleteRoute(Long routeId);
     List<AdminScheduleResponse> getSchedules(Boolean active);
     AdminScheduleResponse createSchedule(AdminScheduleRequest request);
     AdminScheduleResponse updateSchedule(Long scheduleId, AdminScheduleRequest request);
@@ -28,4 +32,8 @@ public interface AdminService {
     AdminUserResponse updateUser(Long userId, AdminUserUpdateRequest request);
     List<BookingResponse> getBookings(BookingStatus status, Long userId, LocalDateTime from, LocalDateTime to);
     BookingResponse cancelBooking(String bookingRef);
+    
+    List<com.bookmyroute.entity.SystemSetting> getSettings();
+    List<com.bookmyroute.entity.SystemSetting> updateSettings(java.util.Map<String, String> settings);
+    List<com.bookmyroute.entity.AdminActionLog> getLogs();
 }
