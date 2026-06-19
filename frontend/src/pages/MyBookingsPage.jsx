@@ -1,9 +1,72 @@
 import { useEffect, useState } from 'react'
-import { format, isAfter, parseISO } from 'date-fns'
+import { format, isAfter, isBefore, parseISO, startOfDay } from 'date-fns'
 import toast from 'react-hot-toast'
 import { FaBus, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaDownload, FaFilter, FaMoneyBillWave, FaRegStar, FaRoute, FaSearch, FaStar, FaTimes, FaTicketAlt, FaTrash, FaUndo, FaUserFriends } from 'react-icons/fa'
-import { bookingApi, reviewApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { bookingApi, reviewApi } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+import CancelConfirmationModal from '../components/booking/CancelConfirmationModal'
+
+function ReviewPromptCard({ booking, onRate }) {
+  const [review, setReview] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (booking.reviewed && booking.bookingId) {
+      setLoading(true)
+      reviewApi.getBookingReview(booking.bookingId)
+        .then(({ data }) => setReview(data?.data))
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    } else {
+      setReview(null)
+    }
+  }, [booking.reviewed, booking.bookingId])
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-border-light bg-surface shadow-sm p-4 animate-pulse mt-5">
+        <div className="h-3 bg-border-medium rounded w-1/3 mb-2"></div>
+        <div className="h-5 bg-border-medium rounded w-1/4"></div>
+      </div>
+    )
+  }
+
+  if (review) {
+    return (
+      <div className="rounded-xl border border-success/30 bg-success/5 p-4 mt-5">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-success mb-1">Review Submitted</p>
+            <div className="flex gap-1 text-warning">
+              {[1, 2, 3, 4, 5].map(v => (
+                <span key={v}>{v <= review.rating ? <FaStar /> : <FaRegStar />}</span>
+              ))}
+            </div>
+          </div>
+          <button onClick={() => onRate(booking)} className="text-[13px] font-bold text-success hover:underline">
+            Edit Review
+          </button>
+        </div>
+        {review.comment && (
+          <p className="text-[13px] text-secondary/80 italic mt-2">"{review.comment}"</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 mt-5 flex flex-wrap justify-between items-center gap-4">
+      <div>
+        <p className="font-bold text-secondary text-[15px]">How was your trip?</p>
+        <p className="text-[13px] text-text-muted mt-0.5">Share your experience to help others.</p>
+      </div>
+      <button onClick={() => onRate(booking)} className="flex items-center gap-2 rounded-lg bg-warning px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-warning/90 shadow-sm">
+        <FaStar /> Rate Trip
+      </button>
+    </div>
+  )
+}
 
 const STATUS_STYLE = {
   CONFIRMED: { bg: 'var(--color-success)', label: 'Confirmed' },
@@ -50,19 +113,13 @@ const DEFAULT_PAGE = {
   last: true,
 }
 
-function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
+function TicketModal({ booking, onClose, onCancel, onDownload, onRate, downloading }) {
   const style = statusFor(booking.bookingStatus)
   const canCancel = canCancelBooking(booking)
   const [cancelling, setCancelling] = useState(false)
 
-  const handleCancel = async () => {
-    setCancelling(true)
-    try {
-      await onCancel(booking.bookingRef)
-      onClose()
-    } finally {
-      setCancelling(false)
-    }
+  const handleCancelClick = () => {
+    onCancel(booking)
   }
 
   return (
@@ -128,10 +185,16 @@ function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
             ))}
           </div>
 
-          <div className="mb-5 flex items-center justify-between rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
             <span className="font-bold text-secondary">Total amount</span>
             <span className="text-2xl font-bold font-mono text-primary">₹{booking.totalAmount}</span>
           </div>
+
+          {booking.bookingStatus === 'COMPLETED' && (
+            <div className="mb-6">
+              <ReviewPromptCard booking={booking} onRate={onRate} />
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
@@ -143,9 +206,23 @@ function TicketModal({ booking, onClose, onCancel, onDownload, downloading }) {
               {downloading ? 'Downloading...' : 'Download ticket'}
             </button>
 
+            {booking.bookingStatus === 'CANCELLED' && booking.refundStatus && (
+              <div className="rounded-xl border border-border-medium bg-surface/50 p-4 mb-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">Refund Status</p>
+                <div className="flex justify-between items-center">
+                  <span className={`font-bold ${booking.refundStatus === 'REFUNDED' ? 'text-success' : booking.refundStatus === 'FAILED' ? 'text-error' : 'text-warning'}`}>
+                    {booking.refundStatus}
+                  </span>
+                  {booking.refundAmount != null && (
+                    <span className="font-bold text-secondary">₹{booking.refundAmount}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {canCancel && (
               <button
-                onClick={handleCancel}
+                onClick={handleCancelClick}
                 disabled={cancelling}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-600 py-3 text-sm font-800 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
               >
@@ -314,10 +391,11 @@ function RatingModal({ booking, onClose, onSaved }) {
   )
 }
 
-function BookingCard({ booking, onClick, onCancel, onDownload, onRate, downloading, cancelling }) {
+function BookingCard({ booking, onClick, onCancel, onDownload, onRate, onBookAgain, downloading, cancelling }) {
   const style = statusFor(booking.bookingStatus)
   const seats = booking.seats?.length || 0
   const canCancel = canCancelBooking(booking)
+  const canBookAgain = booking.bookingStatus === 'COMPLETED' || booking.bookingStatus === 'CANCELLED' || !isJourneyUpcoming(booking)
 
   return (
     <div className="card-hover w-full p-5 lg:p-6 bg-surface border border-border-light rounded-2xl shadow-sm transition-all hover:shadow-md hover:border-primary/20">
@@ -338,22 +416,23 @@ function BookingCard({ booking, onClick, onCancel, onDownload, onRate, downloadi
           <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/5 px-3 py-1"><FaMoneyBillWave className="text-secondary/50"/> ₹{booking.totalAmount}</span>
         </div>
 
-        <span className="w-fit rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm lg:justify-self-end tracking-wide uppercase" style={{ background: style.bg }}>
-          {style.label}
-        </span>
+        <div className="flex flex-col items-end gap-2 lg:justify-self-end">
+          <span className="w-fit rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm tracking-wide uppercase" style={{ background: style.bg }}>
+            {style.label}
+          </span>
+          {booking.bookingStatus === 'CANCELLED' && booking.refundStatus === 'REFUNDED' && booking.refundAmount && (
+            <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded uppercase tracking-wider">
+              Refunded ₹{booking.refundAmount}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-dashed border-border-medium pt-5">
-        {booking.bookingStatus === 'COMPLETED' && (
-          <button
-            onClick={() => onRate(booking)}
-            className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning/10 px-4 py-2 text-sm font-bold text-warning transition-colors hover:bg-warning hover:text-white"
-          >
-            <FaStar />
-            {booking.reviewed ? 'Edit review' : 'Rate journey'}
-          </button>
-        )}
+      {booking.bookingStatus === 'COMPLETED' && (
+        <ReviewPromptCard booking={booking} onRate={onRate} />
+      )}
 
+      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-dashed border-border-medium pt-5">
         <button
           onClick={() => onDownload(booking.bookingRef)}
           disabled={downloading}
@@ -363,9 +442,19 @@ function BookingCard({ booking, onClick, onCancel, onDownload, onRate, downloadi
           {downloading ? 'Downloading...' : 'Ticket PDF'}
         </button>
 
+        {canBookAgain && (
+          <button
+            onClick={() => onBookAgain(booking)}
+            className="flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-white h-10"
+          >
+            <FaSearch />
+            Book again
+          </button>
+        )}
+
         {canCancel && (
           <button
-            onClick={() => onCancel(booking.bookingRef)}
+            onClick={() => onCancel(booking)}
             disabled={cancelling}
             className="btn-outline border-error text-error hover:bg-error hover:text-white px-4 py-2 text-sm h-10"
           >
@@ -380,6 +469,7 @@ function BookingCard({ booking, onClick, onCancel, onDownload, onRate, downloadi
 
 export default function MyBookingsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [bookings, setBookings] = useState([])
   const [summaryBookings, setSummaryBookings] = useState([])
   const [pageInfo, setPageInfo] = useState(DEFAULT_PAGE)
@@ -393,6 +483,7 @@ export default function MyBookingsPage() {
   const [listError, setListError] = useState('')
   const [downloadingRef, setDownloadingRef] = useState(null)
   const [cancellingRef, setCancellingRef] = useState(null)
+  const [cancelModalBooking, setCancelModalBooking] = useState(null)
 
   const buildParams = (filterState, page = 0) => {
     const params = {
@@ -472,15 +563,21 @@ export default function MyBookingsPage() {
     await fetchBookings(nextPage, appliedFilters)
   }
 
-  const handleCancel = async (ref) => {
+  const handleCancelConfirm = async (ref) => {
     setCancellingRef(ref)
     try {
       await bookingApi.cancelBooking(ref)
-      toast.success('Booking cancelled. Refund will be processed in 3-5 days.')
+      toast.success('Booking cancelled successfully.')
+      setCancelModalBooking(null)
+      setSelected(null) // Close ticket modal if open
       await Promise.all([fetchSummary(), fetchBookings(pageInfo.page, appliedFilters)])
     } finally {
       setCancellingRef(null)
     }
+  }
+
+  const handleCancelRequest = (booking) => {
+    setCancelModalBooking(booking)
   }
 
   const handleDownloadTicket = async (ref) => {
@@ -499,6 +596,26 @@ export default function MyBookingsPage() {
     } finally {
       setDownloadingRef(null)
     }
+  }
+
+  const handleBookAgain = (booking) => {
+    let travelDate = parseISO(booking.departureTime)
+    const today = startOfDay(new Date())
+    
+    if (isBefore(travelDate, today)) {
+      travelDate = today
+    }
+
+    navigate('/search', {
+      state: {
+        searchParams: {
+          from: booking.origin,
+          to: booking.destination,
+          date: format(travelDate, 'yyyy-MM-dd')
+        },
+        autoSearch: true
+      }
+    })
   }
 
   const hasActiveFilters = appliedFilters.status !== 'ALL' || appliedFilters.fromDate || appliedFilters.toDate
@@ -622,9 +739,10 @@ export default function MyBookingsPage() {
                   key={booking.bookingRef}
                   booking={booking}
                   onClick={() => setSelected(booking)}
-                  onCancel={handleCancel}
+                  onCancel={handleCancelRequest}
                   onDownload={handleDownloadTicket}
                   onRate={setRatingBooking}
+                  onBookAgain={handleBookAgain}
                   downloading={downloadingRef === booking.bookingRef}
                   cancelling={cancellingRef === booking.bookingRef}
                 />
@@ -664,9 +782,19 @@ export default function MyBookingsPage() {
         <TicketModal
           booking={selected}
           onClose={() => setSelected(null)}
-          onCancel={handleCancel}
+          onCancel={handleCancelRequest}
           onDownload={handleDownloadTicket}
+          onRate={setRatingBooking}
           downloading={downloadingRef === selected.bookingRef}
+        />
+      )}
+
+      {cancelModalBooking && (
+        <CancelConfirmationModal
+          booking={cancelModalBooking}
+          onClose={() => setCancelModalBooking(null)}
+          onConfirm={handleCancelConfirm}
+          isCancelling={cancellingRef === cancelModalBooking.bookingRef}
         />
       )}
 

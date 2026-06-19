@@ -17,12 +17,24 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
         SELECT s FROM Schedule s
         JOIN FETCH s.route r
         JOIN FETCH s.bus b
-        WHERE LOWER(r.origin) = LOWER(:origin)
-          AND LOWER(r.destination) = LOWER(:destination)
-          AND s.departureTime BETWEEN :from AND :to
+        WHERE s.departureTime BETWEEN :from AND :to
           AND s.isActive = true
           AND b.isActive = true
           AND s.availableSeats >= :seats
+          AND (
+               LOWER(r.origin) = LOWER(:origin) OR 
+               EXISTS (SELECT 1 FROM PickupLocation pl WHERE pl.route = r AND LOWER(pl.pickupName) = LOWER(:origin)) OR
+               EXISTS (SELECT 1 FROM PickupSubLocation psl JOIN psl.pickupLocation pl WHERE pl.route = r AND LOWER(psl.subLocationName) = LOWER(:origin)) OR
+               EXISTS (SELECT 1 FROM DropLocation dl WHERE dl.route = r AND LOWER(dl.dropName) = LOWER(:origin)) OR
+               EXISTS (SELECT 1 FROM DropSubLocation dsl JOIN dsl.dropLocation dl WHERE dl.route = r AND LOWER(dsl.subLocationName) = LOWER(:origin))
+          )
+          AND (
+               LOWER(r.destination) = LOWER(:destination) OR 
+               EXISTS (SELECT 1 FROM PickupLocation pl WHERE pl.route = r AND LOWER(pl.pickupName) = LOWER(:destination)) OR
+               EXISTS (SELECT 1 FROM PickupSubLocation psl JOIN psl.pickupLocation pl WHERE pl.route = r AND LOWER(psl.subLocationName) = LOWER(:destination)) OR
+               EXISTS (SELECT 1 FROM DropLocation dl WHERE dl.route = r AND LOWER(dl.dropName) = LOWER(:destination)) OR
+               EXISTS (SELECT 1 FROM DropSubLocation dsl JOIN dsl.dropLocation dl WHERE dl.route = r AND LOWER(dsl.subLocationName) = LOWER(:destination))
+          )
         ORDER BY s.departureTime
         """)
     List<Schedule> searchSchedules(@Param("origin")      String origin,

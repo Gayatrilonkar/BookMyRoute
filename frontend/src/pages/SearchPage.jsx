@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { FaBolt, FaBusAlt, FaFilter, FaStar, FaWifi } from 'react-icons/fa'
 import { MdSwapHoriz } from 'react-icons/md'
@@ -7,13 +7,14 @@ import toast from 'react-hot-toast'
 import { searchApi } from '../services/api'
 import { CitySearchInput, JourneyDatePicker } from '../components/common/JourneySearchControls'
 import { useSearchStore } from '../store/useSearchStore'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import SkeletonLoader from '../components/common/SkeletonLoader'
+import JourneyCard from '../components/search/JourneyCard'
+import SearchFilters from '../components/search/SearchFilters'
+import SearchFilterChips from '../components/search/SearchFilterChips'
+import SortDropdown from '../components/search/SortDropdown'
 
 const FALLBACK_CITIES = ['Pune','Mumbai','Goa','Bangalore','Mysore','Chennai','Hyderabad','Delhi','Jaipur','Kolkata']
-import JourneyCard from '../components/search/JourneyCard'
-
-
 export default function SearchPage() {
   const navigate = useNavigate()
   const { state } = useLocation()
@@ -99,11 +100,80 @@ export default function SearchPage() {
     })
   }, [])
 
-  const sorted = results ? [...results].sort((a, b) =>
-    sortBy === 'price' ? a.baseFare - b.baseFare :
-    sortBy === 'departure' ? (a.departureTime || '').localeCompare(b.departureTime || '') :
-    b.availableSeats - a.availableSeats
-  ) : []
+  const { filters, setFilters } = useSearchStore()
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+
+  const filtered = React.useMemo(() => {
+    if (!results) return []
+    
+    // Find the actual max fare in the current results to avoid incorrectly filtering out
+    // buses when fareRange[1] is left at the default but buses cost more.
+    const maxFareInResults = Math.max(0, ...results.map(b => b.baseFare || 0))
+    const currentMaxFareFilter = filters.fareRange[1] === 5000 && maxFareInResults > 5000 
+      ? Math.max(5000, maxFareInResults) 
+      : filters.fareRange[1];
+
+    return results.filter(bus => {
+      if (filters.availableSeatsOnly && Number(bus.availableSeats) <= 0) return false
+      if (bus.baseFare > currentMaxFareFilter) return false
+
+      if (filters.busTypes.length > 0) {
+        const types = (bus.busType || '').split(',').map(t => t.trim())
+        if (!filters.busTypes.some(type => types.includes(type))) return false
+      }
+
+      if (filters.amenities.length > 0) {
+        const amenities = (bus.amenities || '').split(',').map(a => a.trim())
+        if (!filters.amenities.every(amenity => amenities.includes(amenity))) return false
+      }
+
+      if (filters.durationSlots.length > 0) {
+        const mins = bus.durationMins || 0
+        const match = filters.durationSlots.some(slot => {
+          if (slot === '< 4h') return mins < 240
+          if (slot === '4-8h') return mins >= 240 && mins < 480
+          if (slot === '8-12h') return mins >= 480 && mins < 720
+          if (slot === '> 12h') return mins >= 720
+          return false
+        })
+        if (!match) return false
+      }
+
+      if (filters.departureSlots.length > 0) {
+        const hourStr = (bus.departureTime || '').slice(11, 13)
+        if (hourStr) {
+          const hour = parseInt(hourStr, 10)
+          const match = filters.departureSlots.some(slot => {
+            if (slot === 'Early Morning') return hour >= 0 && hour < 6
+            if (slot === 'Morning') return hour >= 6 && hour < 12
+            if (slot === 'Afternoon') return hour >= 12 && hour < 18
+            if (slot === 'Evening') return hour >= 18 && hour <= 23
+            return false
+          })
+          if (!match) return false
+        }
+      }
+
+      return true
+    })
+  }, [results, filters])
+
+  const sorted = React.useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'price': return a.baseFare - b.baseFare
+        case 'price_desc': return b.baseFare - a.baseFare
+        case 'duration': return (a.durationMins || 9999) - (b.durationMins || 9999)
+        case 'duration_desc': return (b.durationMins || 0) - (a.durationMins || 0)
+        case 'departure': return (a.departureTime || '').localeCompare(b.departureTime || '')
+        case 'departure_desc': return (b.departureTime || '').localeCompare(a.departureTime || '')
+        case 'arrival': return (a.arrivalTime || '').localeCompare(b.arrivalTime || '')
+        case 'arrival_desc': return (b.arrivalTime || '').localeCompare(a.arrivalTime || '')
+        case 'seats': return b.availableSeats - a.availableSeats
+        default: return a.baseFare - b.baseFare
+      }
+    })
+  }, [filtered, sortBy])
 
   return (
     <motion.div 
@@ -175,46 +245,70 @@ export default function SearchPage() {
             <h2 className="text-xl font-bold text-secondary">Start with your route</h2>
             <p className="mt-2 text-[15px] text-text-muted">Choose a city pair and date to see available buses.</p>
           </div>
-        ) : sorted.length === 0 ? (
+        ) : sorted.length === 0 && filtered.length === 0 && results.length > 0 ? (
           <div className="rounded-xl border border-dashed border-border-medium bg-white p-12 text-center">
-            <FaBusAlt className="mx-auto mb-4 text-5xl text-gray-300" />
-            <h2 className="text-xl font-bold text-secondary">No buses found</h2>
-            <p className="mt-2 text-[15px] text-text-muted">Try changing the date or route.</p>
+            <FaFilter className="mx-auto mb-4 text-5xl text-gray-300" />
+            <h2 className="text-xl font-bold text-secondary">No buses match your filters</h2>
+            <p className="mt-2 text-[15px] text-text-muted">Try removing some filters to see more results.</p>
+            <button 
+              onClick={() => setFilters({ busTypes: [], amenities: [], fareRange: [0, 50000], durationSlots: [], departureSlots: [], availableSeatsOnly: false })}
+              className="mt-4 btn-primary px-6 py-2 mx-auto"
+            >
+              Clear All Filters
+            </button>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[250px_1fr]">
-            <aside className="card h-fit p-5">
-              <div className="mb-4 flex items-center gap-2">
-                <FaFilter className="text-primary" />
-                <h2 className="font-bold text-secondary">Sort results</h2>
-              </div>
-              <div className="grid gap-2">
-                {[
-                  ['price', 'Lowest fare'],
-                  ['departure', 'Earliest departure'],
-                  ['seats', 'Most seats'],
-                ].map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => setSortBy(key)}
-                    className={`rounded-lg border px-3 py-2 text-left text-[15px] font-medium transition-colors ${
-                      sortBy === key
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border-medium bg-white text-text-muted hover:border-primary/40 hover:text-secondary'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            
+            {/* Desktop Sidebar */}
+            <aside className="hidden lg:block card h-fit overflow-hidden sticky top-4">
+              <SearchFilters rawResults={results} />
             </aside>
 
+            {/* Mobile Drawer */}
+            <AnimatePresence>
+              {showMobileFilters && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-secondary/80 z-40 lg:hidden"
+                    onClick={() => setShowMobileFilters(false)}
+                  />
+                  <motion.div 
+                    initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="fixed inset-y-0 left-0 w-[85vw] max-w-[320px] bg-white z-50 shadow-2xl lg:hidden flex flex-col"
+                  >
+                    <SearchFilters rawResults={results} onCloseMobile={() => setShowMobileFilters(false)} />
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
             <main>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold text-secondary">{sorted.length} bus{sorted.length > 1 ? 'es' : ''} found</p>
-                  <p className="text-[15px] text-text-muted">{form.from} to {form.to} on {form.date}</p>
+              <div className="mb-4 flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-bold text-secondary">
+                      {sorted.length} {sorted.length === 1 ? 'bus' : 'buses'} found
+                    </h2>
+                    <p className="text-[15px] text-text-muted mt-0.5">
+                      {form.from} to {form.to} on {format(parseISO(form.date), 'dd MMM yyyy')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setShowMobileFilters(true)}
+                      className="lg:hidden flex items-center gap-2 px-4 py-2 border border-border-medium rounded-lg text-sm font-bold text-secondary bg-white hover:bg-gray-50"
+                    >
+                      <FaFilter className="text-primary" />
+                      Filters
+                    </button>
+                    <SortDropdown />
+                  </div>
                 </div>
+                
+                <SearchFilterChips />
               </div>
               <div className="flex flex-col gap-4">
                 {sorted.map(bus => (

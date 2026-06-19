@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Journey Reminder - BookMyRoute</title>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #172033; line-height: 1.6; }
+        .container { max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header { background: linear-gradient(135deg, #d84e55 0%, #ab333a 100%); color: #ffffff; padding: 30px 40px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 15px; }
+        .content { padding: 40px; }
+        .greeting { font-size: 18px; margin-bottom: 20px; font-weight: 600; }
+        .ref-box { background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 30px; }
+        .ref-box .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 5px; }
+        .ref-box .pnr { font-size: 22px; font-weight: 700; color: #d84e55; margin: 0; letter-spacing: 2px; }
+        
+        .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin: 30px 0 15px; font-weight: 700; }
+        
+        .grid { display: flex; flex-wrap: wrap; margin: 0 -10px; }
+        .col { flex: 1; min-width: 200px; padding: 0 10px; margin-bottom: 15px; }
+        .label { font-size: 12px; color: #64748b; margin-bottom: 4px; display: block; }
+        .value { font-size: 15px; font-weight: 600; color: #0f172a; margin: 0; }
+        
+        .route-timeline { position: relative; padding-left: 20px; margin-top: 10px; }
+        .route-timeline::before { content: ''; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; background-color: #e2e8f0; }
+        .point { position: relative; margin-bottom: 20px; }
+        .point:last-child { margin-bottom: 0; }
+        .point::before { content: ''; position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background-color: #d84e55; border: 2px solid #fff; box-shadow: 0 0 0 1px #d84e55; }
+        .point.drop::before { background-color: #0f172a; box-shadow: 0 0 0 1px #0f172a; }
+        
+        .info-box { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px 20px; border-radius: 4px; margin-top: 30px; }
+        .info-box h4 { margin: 0 0 8px; color: #991b1b; font-size: 15px; }
+        .info-box ul { margin: 0; padding-left: 20px; color: #7f1d1d; font-size: 14px; }
+        .info-box li { margin-bottom: 5px; }
+        
+        .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 30px 40px; text-align: center; color: #64748b; font-size: 13px; }
+        .btn { display: inline-block; background-color: #d84e55; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin-top: 25px; transition: background-color 0.2s; text-align: center; }
+        .btn:hover { background-color: #ab333a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Your Journey Starts Soon!</h1>
+            <p>Get ready for your trip to <span th:text="${route.destinationCity}">Destination</span></p>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello <span th:text="${user.name}">Traveller</span>,</div>
+            <p>This is a friendly reminder that your bus journey is coming up soon. Please review your travel details below.</p>
+            
+            <div class="ref-box">
+                <div class="label">Booking Reference (PNR)</div>
+                <div class="pnr" th:text="${booking.bookingRef}">BMR-XXX</div>
+            </div>
+            
+            <div class="section-title">Journey Details</div>
+            
+            <div class="route-timeline">
+                <div class="point">
+                    <div class="label" th:text="${#temporals.format(schedule.departureTime, 'EEE, dd MMM yyyy')}">Date</div>
+                    <div class="value" th:text="${#temporals.format(schedule.departureTime, 'hh:mm a')}">00:00 AM</div>
+                    <div class="value" style="margin-top: 4px;" th:text="${route.originCity}">Origin</div>
+                    <div class="label" style="margin-top: 2px;" th:text="${booking.pickupLocationName}">Boarding Point</div>
+                </div>
+                <div class="point drop">
+                    <div class="label" th:text="${#temporals.format(schedule.arrivalTime, 'EEE, dd MMM yyyy')}">Date</div>
+                    <div class="value" th:text="${#temporals.format(schedule.arrivalTime, 'hh:mm a')}">00:00 PM</div>
+                    <div class="value" style="margin-top: 4px;" th:text="${route.destinationCity}">Destination</div>
+                    <div class="label" style="margin-top: 2px;" th:text="${booking.dropLocationName}">Dropping Point</div>
+                </div>
+            </div>
+            
+            <div class="section-title">Bus & Seat Info</div>
+            <div class="grid">
+                <div class="col">
+                    <span class="label">Operator</span>
+                    <span class="value" th:text="${bus.operatorName}">Operator Name</span>
+                </div>
+                <div class="col">
+                    <span class="label">Bus Type</span>
+                    <span class="value" th:text="${bus.type}">Bus Type</span>
+                </div>
+                <div class="col">
+                    <span class="label">Seat(s)</span>
+                    <span class="value">
+                        <th:block th:each="seat, stat : ${seats}">
+                            <span th:text="${seat.seat.seatNumber}"></span><span th:if="${!stat.last}">, </span>
+                        </th:block>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h4>Important Boarding Instructions</h4>
+                <ul>
+                    <li>Please report at the boarding point at least <strong>15 minutes</strong> before departure.</li>
+                    <li>Carry a valid Government-issued photo ID (Aadhar, PAN, Passport, Driving License).</li>
+                    <li>Show your digital E-Ticket or this email to the conductor; a physical printout is not strictly required but recommended.</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center;">
+                <a th:href="@{'http://localhost:3000/my-bookings'}" class="btn">View Booking & Download Ticket</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p style="margin-top: 0; margin-bottom: 10px;">Need help? Contact our support team at <a href="mailto:support@bookmyroute.com" style="color: #d84e55; text-decoration: none;">support@bookmyroute.com</a> or call 1800-BOOK-BUS.</p>
+            <p style="margin: 0;">&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span> BookMyRoute. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

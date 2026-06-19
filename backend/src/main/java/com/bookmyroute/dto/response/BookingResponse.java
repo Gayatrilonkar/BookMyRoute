@@ -35,6 +35,8 @@ public class BookingResponse {
     private Long reviewId;
     private Boolean notificationEmailSent;
     private String notificationEmailMessage;
+    private String refundStatus;
+    private BigDecimal refundAmount;
 
     public BookingResponse() {}
 
@@ -66,6 +68,8 @@ public class BookingResponse {
         private Long reviewId;
         private Boolean notificationEmailSent;
         private String notificationEmailMessage;
+        private String refundStatus;
+        private BigDecimal refundAmount;
 
         public Builder bookingId(Long bookingId) { this.bookingId = bookingId; return this; }
         public Builder bookingRef(String bookingRef) { this.bookingRef = bookingRef; return this; }
@@ -92,6 +96,8 @@ public class BookingResponse {
         public Builder reviewId(Long reviewId) { this.reviewId = reviewId; return this; }
         public Builder notificationEmailSent(Boolean notificationEmailSent) { this.notificationEmailSent = notificationEmailSent; return this; }
         public Builder notificationEmailMessage(String notificationEmailMessage) { this.notificationEmailMessage = notificationEmailMessage; return this; }
+        public Builder refundStatus(String refundStatus) { this.refundStatus = refundStatus; return this; }
+        public Builder refundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; return this; }
 
         public BookingResponse build() {
             BookingResponse r = new BookingResponse();
@@ -108,6 +114,8 @@ public class BookingResponse {
             r.canReview = this.canReview; r.reviewed = this.reviewed; r.reviewId = this.reviewId;
             r.notificationEmailSent = this.notificationEmailSent;
             r.notificationEmailMessage = this.notificationEmailMessage;
+            r.refundStatus = this.refundStatus;
+            r.refundAmount = this.refundAmount;
             return r;
         }
     }
@@ -162,6 +170,10 @@ public class BookingResponse {
     public void setNotificationEmailSent(Boolean notificationEmailSent) { this.notificationEmailSent = notificationEmailSent; }
     public String getNotificationEmailMessage() { return notificationEmailMessage; }
     public void setNotificationEmailMessage(String notificationEmailMessage) { this.notificationEmailMessage = notificationEmailMessage; }
+    public String getRefundStatus() { return refundStatus; }
+    public void setRefundStatus(String refundStatus) { this.refundStatus = refundStatus; }
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount) { this.refundAmount = refundAmount; }
 
     public static class SeatDetail {
         private String seatNumber;

@@ -91,4 +91,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByStatus(BookingStatus status);
     long countByBookedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    @Query("""
+        SELECT DISTINCT b FROM Booking b
+        JOIN FETCH b.user u
+        JOIN FETCH b.schedule s
+        JOIN FETCH s.route
+        JOIN FETCH s.bus
+        LEFT JOIN FETCH b.bookingSeats bs
+        LEFT JOIN FETCH bs.seat
+        WHERE b.status = 'CONFIRMED'
+          AND b.journeyReminderSent = false
+          AND s.departureTime BETWEEN :startTime AND :endTime
+        """)
+    List<Booking> findBookingsForReminder(@Param("startTime") LocalDateTime startTime,
+                                          @Param("endTime") LocalDateTime endTime);
 }

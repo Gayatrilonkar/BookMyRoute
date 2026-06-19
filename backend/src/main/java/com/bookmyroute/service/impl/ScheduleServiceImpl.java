@@ -14,6 +14,11 @@ import com.bookmyroute.repository.SeatRepository;
 import com.bookmyroute.repository.BookingSeatRepository;
 import com.bookmyroute.service.ScheduleService;
 import com.bookmyroute.entity.BookingSeat;
+import com.bookmyroute.entity.Route;
+import com.bookmyroute.entity.PickupLocation;
+import com.bookmyroute.entity.PickupSubLocation;
+import com.bookmyroute.entity.DropLocation;
+import com.bookmyroute.entity.DropSubLocation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,9 +85,18 @@ public class ScheduleServiceImpl implements ScheduleService {
         LocalDateTime from = req.getTravelDate().atStartOfDay();
         LocalDateTime to   = req.getTravelDate().atTime(LocalTime.MAX);
 
-        return scheduleRepository.searchSchedules(
+        List<Schedule> candidates = scheduleRepository.searchSchedules(
                 req.getOrigin(), req.getDestination(), from, to, req.getSeats()
-        ).stream().map(this::toSearchDto).toList();
+        );
+
+        return candidates.stream()
+                .filter(s -> {
+                    int oIdx = getStopIndex(s.getRoute(), req.getOrigin());
+                    int dIdx = getStopIndex(s.getRoute(), req.getDestination());
+                    return oIdx != -1 && dIdx != -1 && oIdx <= dIdx;
+                })
+                .map(s -> toSearchDto(s, req.getOrigin(), req.getDestination()))
+                .toList();
     }
 
     @Override
@@ -159,7 +173,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
     }
 
-    private ScheduleResponse.Search toSearchDto(Schedule s) {
+    private ScheduleResponse.Search toSearchDto(Schedule s, String originSearch, String destSearch) {
         Long routeId = s.getRoute().getId();
         long reviewCount = routeReviewRepository.countByRouteId(routeId);
         double averageRating = reviewCount == 0
@@ -169,8 +183,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         return ScheduleResponse.Search.builder()
                 .scheduleId(s.getId())
                 .routeId(routeId)
-                .origin(s.getRoute().getOrigin())
-                .destination(s.getRoute().getDestination())
+                .origin(originSearch)
+                .destination(destSearch)
                 .departureTime(s.getDepartureTime())
                 .arrivalTime(s.getArrivalTime())
                 .baseFare(s.getBaseFare())
@@ -326,5 +340,42 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     private boolean seatCountEquals(Integer current, int normalized) {
         return current != null && current == normalized;
+    }
+
+    private int getStopIndex(Route route, String stopName) {
+        if (stopName == null) return -1;
+        String query = stopName.toLowerCase().trim();
+        if (route.getOrigin() != null && route.getOrigin().toLowerCase().trim().equals(query)) return 0;
+        
+        int idx = 1;
+        if (route.getPickupLocations() != null) {
+            for (PickupLocation pl : route.getPickupLocations()) {
+                if (pl.getPickupName() != null && pl.getPickupName().toLowerCase().trim().equals(query)) return idx;
+                idx++;
+                if (pl.getSubLocations() != null) {
+                    for (PickupSubLocation psl : pl.getSubLocations()) {
+                        if (psl.getSubLocationName() != null && psl.getSubLocationName().toLowerCase().trim().equals(query)) return idx;
+                        idx++;
+                    }
+                }
+            }
+        }
+        
+        if (route.getDropLocations() != null) {
+            for (DropLocation dl : route.getDropLocations()) {
+                if (dl.getDropName() != null && dl.getDropName().toLowerCase().trim().equals(query)) return idx;
+                idx++;
+                if (dl.getSubLocations() != null) {
+                    for (DropSubLocation dsl : dl.getSubLocations()) {
+                        if (dsl.getSubLocationName() != null && dsl.getSubLocationName().toLowerCase().trim().equals(query)) return idx;
+                        idx++;
+                    }
+                }
+            }
+        }
+        
+        if (route.getDestination() != null && route.getDestination().toLowerCase().trim().equals(query)) return idx;
+        
+        return -1;
     }
 }

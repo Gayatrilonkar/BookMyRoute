@@ -101,6 +101,31 @@ public class EmailService {
         }
     }
 
+    public EmailDeliveryResponse sendJourneyReminder(Booking booking) {
+        String recipient = booking.getUser().getEmail();
+        try {
+            log.info("Sending journey reminder email to {} for {}", recipient, booking.getBookingRef());
+            EmailDeliveryResponse readiness = validateMailSettings(recipient);
+            if (!readiness.isConfigured()) {
+                logDelivery("journey reminder", booking.getBookingRef(), readiness);
+                return readiness;
+            }
+            Context context = createBookingContext(booking);
+            String html = templateEngine.process("email/journey-reminder", context);
+            EmailDeliveryResponse delivery = sendHtmlEmail(
+                    recipient,
+                    "Your Journey Starts Soon – Travel Reminder (" + booking.getBookingRef() + ")",
+                    html
+            );
+            logDelivery("journey reminder", booking.getBookingRef(), delivery);
+            return delivery;
+        } catch (Exception ex) {
+            log.warn("Journey reminder email failed before send for {}: {}", booking.getBookingRef(), ex.getMessage(), ex);
+            return EmailDeliveryResponse.failed(recipient, isConfigured(resolveFromAddress()),
+                    "Email notification failed: " + ex.getMessage());
+        }
+    }
+
     public EmailDeliveryResponse sendTestEmail(String to) {
         try {
             EmailDeliveryResponse readiness = validateMailSettings(to);

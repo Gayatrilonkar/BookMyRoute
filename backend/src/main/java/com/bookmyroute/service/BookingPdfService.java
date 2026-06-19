@@ -12,8 +12,16 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.awt.image.BufferedImage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,7 +60,7 @@ public class BookingPdfService {
             document.addPage(page);
 
             try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-                drawTicket(content, booking);
+                drawTicket(document, content, booking);
             }
 
             document.save(outputStream);
@@ -62,7 +70,7 @@ public class BookingPdfService {
         }
     }
 
-    private void drawTicket(PDPageContentStream content, Booking booking) throws IOException {
+    private void drawTicket(PDDocument document, PDPageContentStream content, Booking booking) throws IOException {
         float margin = 48;
         float width = PDRectangle.A4.getWidth();
         float y = 780;
@@ -117,9 +125,47 @@ public class BookingPdfService {
         writeText(content, PDType1Font.HELVETICA_BOLD, 13, margin + 14, totalY + 6, "Total Amount");
         writeText(content, PDType1Font.HELVETICA_BOLD, 18, 420, totalY + 3, money(booking.getTotalAmount()));
 
+        float infoY = totalY - 50;
+        
+        // Draw QR Code
+        BufferedImage qrImage = generateQRCode(booking.getBookingRef());
+        if (qrImage != null) {
+            PDImageXObject pdImage = LosslessFactory.createFromImage(document, qrImage);
+            content.drawImage(pdImage, 420, infoY - 100, 100, 100);
+        }
+
+        // Terms and Conditions & Customer Support
+        sectionTitle(content, margin, infoY, "Terms & Conditions");
         content.setNonStrokingColor(100, 116, 139);
-        writeText(content, PDType1Font.HELVETICA, 9, margin, 58,
-                "Please carry a valid ID proof. This ticket is valid only for the passenger and journey shown above.");
+        String[] terms = {
+            "1. Please carry a valid Photo ID proof matching the passenger name.",
+            "2. The ticket is valid only for the specified journey and passenger.",
+            "3. Passengers must report at the boarding point 15 minutes prior to departure.",
+            "4. BookMyRoute is not responsible for any delays due to traffic or weather."
+        };
+        float textY = infoY - 18;
+        for (String term : terms) {
+            writeText(content, PDType1Font.HELVETICA, 9, margin, textY, term);
+            textY -= 14;
+        }
+
+        textY -= 10;
+        sectionTitle(content, margin, textY, "Customer Support");
+        content.setNonStrokingColor(100, 116, 139);
+        textY -= 18;
+        writeText(content, PDType1Font.HELVETICA, 9, margin, textY, "Phone: +91 1800 123 4567");
+        textY -= 14;
+        writeText(content, PDType1Font.HELVETICA, 9, margin, textY, "Email: support@bookmyroute.com");
+    }
+
+    private BufferedImage generateQRCode(String text) {
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, 120, 120);
+            return MatrixToImageWriter.toBufferedImage(bitMatrix);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void drawPassengerTable(PDPageContentStream content, Booking booking, float x, float y) throws IOException {

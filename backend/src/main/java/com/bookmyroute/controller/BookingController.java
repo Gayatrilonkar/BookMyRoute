@@ -99,6 +99,14 @@ public class BookingController {
                 .body(pdf);
     }
 
+    @GetMapping("/{bookingRef}/cancellation-quote")
+    public ResponseEntity<ApiResponse<com.bookmyroute.dto.response.CancellationQuoteResponse>> getCancellationQuote(
+            @PathVariable String bookingRef,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(ApiResponse.success(
+                bookingService.getCancellationQuote(bookingRef, userDetails.getUsername())));
+    }
+
     // Changed from @PostMapping to @PatchMapping to match REST conventions
     // and the React frontend's bookingApi.cancelBooking which uses PATCH
     @PatchMapping("/{bookingRef}/cancel")

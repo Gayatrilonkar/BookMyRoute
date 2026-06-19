@@ -285,6 +285,37 @@ public class PaymentGatewayServiceImpl implements PaymentGatewayService {
         return toResponse(saved, emailDelivery);
     }
 
+    @Override
+    @Transactional
+    public void processRefund(Payment payment, BigDecimal refundAmount) {
+        if (payment.getTransactionId() == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            payment.setRefundStatus("NOT_APPLICABLE");
+            paymentRepository.save(payment);
+            return;
+        }
+
+        if (razorpayKeyId.startsWith("rzp_test_T2Lz") || payment.getTransactionId().startsWith("pay_mock_") || payment.getRazorpayOrderId().startsWith("order_mock_")) {
+            // Local mock bypass
+            payment.setRefundStatus("REFUNDED");
+            paymentRepository.save(payment);
+            return;
+        }
+
+        try {
+            JSONObject refundRequest = new JSONObject();
+            refundRequest.put("amount", refundAmount.multiply(BigDecimal.valueOf(100)).intValue());
+            refundRequest.put("speed", "normal");
+            
+            // Invoke Razorpay Refund API
+            com.razorpay.Refund refund = razorpayClient.payments.refund(payment.getTransactionId(), refundRequest);
+            payment.setRefundStatus("REFUNDED");
+        } catch (RazorpayException e) {
+            payment.setRefundStatus("FAILED");
+            // Optionally log the error, but we'll record FAILED in DB
+        }
+        paymentRepository.save(payment);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private boolean verifySignature(String orderId, String paymentId, String signature) {
@@ -367,6 +398,8 @@ public class PaymentGatewayServiceImpl implements PaymentGatewayService {
                 .reviewId(review != null ? review.getReviewId() : null)
                 .notificationEmailSent(emailDelivery != null ? emailDelivery.isSent() : null)
                 .notificationEmailMessage(emailDelivery != null ? emailDelivery.getMessage() : null)
+                .refundStatus(pay != null ? pay.getRefundStatus() : null)
+                .refundAmount(pay != null && pay.getRefundStatus() != null && pay.getStatus() == PaymentStatus.REFUNDED ? pay.getAmount() : null)
                 .build();
     }
 }

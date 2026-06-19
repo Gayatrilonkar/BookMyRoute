@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 import { FaArrowLeft, FaArrowRight, FaBus, FaCheck, FaCheckCircle, FaCreditCard, FaDownload, FaMobileAlt, FaShieldAlt, FaUniversity, FaUser } from 'react-icons/fa'
 import { MdEventSeat, MdPayment } from 'react-icons/md'
-import { bookingApi, seatApi, paymentApi, routeApi } from '../services/api'
+import { bookingApi, seatApi, paymentApi, routeApi, passengerProfileApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import SkeletonLoader from '../components/common/SkeletonLoader'
@@ -269,6 +269,7 @@ export default function BookingPage() {
   const [dropLocationId, setDropLocationId] = useState(null)
   const [pickupSubLocationId, setPickupSubLocationId] = useState(null)
   const [dropSubLocationId, setDropSubLocationId] = useState(null)
+  const [savedProfiles, setSavedProfiles] = useState([])
 
   useEffect(() => {
     if (!bus?.scheduleId) return
@@ -310,6 +311,16 @@ export default function BookingPage() {
       }
     }
 
+    const loadSavedProfiles = async () => {
+      if (!user) return
+      try {
+        const { data } = await passengerProfileApi.getProfiles()
+        if (!cancelled) setSavedProfiles(data?.data || [])
+      } catch (err) {
+        console.error("Failed to load passenger profiles", err)
+      }
+    }
+
     const connectSSE = () => {
       eventSource = new EventSource(`/api/schedules/${bus.scheduleId}/seats/stream`)
       
@@ -342,6 +353,7 @@ export default function BookingPage() {
 
     loadInitialSeats()
     loadRouteLocations()
+    loadSavedProfiles()
     connectSSE()
 
     return () => {
@@ -761,10 +773,34 @@ export default function BookingPage() {
             <div className="grid gap-5">
               {passengers.map((passenger, i) => (
                 <div key={passenger.seatId} className="rounded-xl border border-border-light p-5 bg-surface/50">
-                  <p className="mb-4 flex items-center gap-2 text-[15px] font-bold text-secondary">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs text-white">{passenger.seatLabel}</span>
-                    Passenger {i + 1}
-                  </p>
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p className="flex items-center gap-2 text-[15px] font-bold text-secondary">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs text-white">{passenger.seatLabel}</span>
+                      Passenger {i + 1}
+                    </p>
+                    
+                    {savedProfiles.length > 0 && (
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                        <span className="text-xs font-bold text-text-muted whitespace-nowrap">AUTOFILL:</span>
+                        {savedProfiles.map(profile => (
+                          <button
+                            key={profile.id}
+                            type="button"
+                            onClick={() => {
+                              setPassengers(items => items.map((item, j) => 
+                                j === i ? { ...item, name: profile.fullName, age: profile.age, gender: profile.gender } : item
+                              ))
+                              toast.success(`Autofilled with ${profile.fullName}`)
+                            }}
+                            className="text-xs font-bold bg-white border border-border-medium rounded-full px-3 py-1 hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
+                          >
+                            {profile.fullName}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label>
                       <span className="mb-1.5 block text-xs font-bold uppercase text-text-muted tracking-wider">Full name</span>

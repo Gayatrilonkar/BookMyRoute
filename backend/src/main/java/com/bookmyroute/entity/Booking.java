@@ -82,14 +82,20 @@ public class Booking {
     @Column(name = "drop_sub_location_name")
     private String dropSubLocationName;
 
+    @Column(name = "journey_reminder_sent", nullable = false)
+    private boolean journeyReminderSent = false;
+
+    @Column(name = "journey_reminder_sent_at")
+    private LocalDateTime journeyReminderSentAt;
+
     public Booking() {}
 
     public Booking(Long id, User user, Schedule schedule, String bookingRef, BigDecimal totalAmount,
                    BookingStatus status, LocalDateTime bookedAt, LocalDateTime updatedAt,
                    List<BookingSeat> bookingSeats, Payment payment, PickupLocation pickupLocation, DropLocation dropLocation,
                    PickupSubLocation pickupSubLocation, DropSubLocation dropSubLocation,
-                   String pickupLocationName, String dropLocationName,
-                   String pickupSubLocationName, String dropSubLocationName) {
+                   String pickupSubLocationName, String dropSubLocationName,
+                   boolean journeyReminderSent, LocalDateTime journeyReminderSentAt) {
         this.id = id; this.user = user; this.schedule = schedule;
         this.bookingRef = bookingRef; this.totalAmount = totalAmount; this.status = status;
         this.bookedAt = bookedAt; this.updatedAt = updatedAt;
@@ -98,6 +104,7 @@ public class Booking {
         this.pickupSubLocation = pickupSubLocation; this.dropSubLocation = dropSubLocation;
         this.pickupLocationName = pickupLocationName; this.dropLocationName = dropLocationName;
         this.pickupSubLocationName = pickupSubLocationName; this.dropSubLocationName = dropSubLocationName;
+        this.journeyReminderSent = journeyReminderSent; this.journeyReminderSentAt = journeyReminderSentAt;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -121,6 +128,8 @@ public class Booking {
         private String dropLocationName;
         private String pickupSubLocationName;
         private String dropSubLocationName;
+        private boolean journeyReminderSent = false;
+        private LocalDateTime journeyReminderSentAt;
 
         public Builder id(Long id) { this.id = id; return this; }
         public Builder user(User user) { this.user = user; return this; }
@@ -140,6 +149,8 @@ public class Booking {
         public Builder dropLocationName(String dropLocationName) { this.dropLocationName = dropLocationName; return this; }
         public Builder pickupSubLocationName(String pickupSubLocationName) { this.pickupSubLocationName = pickupSubLocationName; return this; }
         public Builder dropSubLocationName(String dropSubLocationName) { this.dropSubLocationName = dropSubLocationName; return this; }
+        public Builder journeyReminderSent(boolean journeyReminderSent) { this.journeyReminderSent = journeyReminderSent; return this; }
+        public Builder journeyReminderSentAt(LocalDateTime journeyReminderSentAt) { this.journeyReminderSentAt = journeyReminderSentAt; return this; }
 
         public Booking build() {
             Booking b = new Booking();
@@ -151,6 +162,7 @@ public class Booking {
             b.pickupSubLocation = this.pickupSubLocation; b.dropSubLocation = this.dropSubLocation;
             b.pickupLocationName = this.pickupLocationName; b.dropLocationName = this.dropLocationName;
             b.pickupSubLocationName = this.pickupSubLocationName; b.dropSubLocationName = this.dropSubLocationName;
+            b.journeyReminderSent = this.journeyReminderSent; b.journeyReminderSentAt = this.journeyReminderSentAt;
             return b;
         }
     }
@@ -191,4 +203,8 @@ public class Booking {
     public void setPickupSubLocationName(String pickupSubLocationName) { this.pickupSubLocationName = pickupSubLocationName; }
     public String getDropSubLocationName() { return dropSubLocationName; }
     public void setDropSubLocationName(String dropSubLocationName) { this.dropSubLocationName = dropSubLocationName; }
+    public boolean isJourneyReminderSent() { return journeyReminderSent; }
+    public void setJourneyReminderSent(boolean journeyReminderSent) { this.journeyReminderSent = journeyReminderSent; }
+    public LocalDateTime getJourneyReminderSentAt() { return journeyReminderSentAt; }
+    public void setJourneyReminderSentAt(LocalDateTime journeyReminderSentAt) { this.journeyReminderSentAt = journeyReminderSentAt; }
 }

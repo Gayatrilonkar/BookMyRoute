@@ -112,6 +112,7 @@ export const bookingApi = {
   searchMyBookings: (params) => api.get('/bookings/my/search', { params }),
   getBooking:    (ref)    => api.get(`/bookings/${ref}`),
   downloadTicket: (ref)   => api.get(`/bookings/${ref}/pdf`, { responseType: 'blob' }),
+  getCancellationQuote: (ref) => api.get(`/bookings/${ref}/cancellation-quote`),
   cancelBooking: (ref)    => api.patch(`/bookings/${ref}/cancel`),
 }
 
@@ -124,12 +125,19 @@ export const paymentApi = {
 }
 
 export const reviewApi = {
-  submitReview: (data) => api.post('/bookings/reviews', data),
-  updateReview: (reviewId, data) => api.put(`/bookings/reviews/${reviewId}`, data),
-  deleteReview: (reviewId) => api.delete(`/bookings/reviews/${reviewId}`),
-  getBookingReview: (bookingId) => api.get(`/bookings/reviews/booking/${bookingId}`, { silentError: true }),
+  submitReview: (data) => api.post('/reviews', data),
+  updateReview: (reviewId, data) => api.put(`/reviews/${reviewId}`, data),
+  deleteReview: (reviewId) => api.delete(`/reviews/${reviewId}`),
+  getBookingReview: (bookingId) => api.get(`/reviews/booking/${bookingId}`, { silentError: true }),
   getRouteReviews: (routeId, params) => api.get(`/reviews/routes/${routeId}`, { params, skipAuth: true }),
   getRouteSummary: (routeId) => api.get(`/reviews/routes/${routeId}/summary`, { skipAuth: true }),
+}
+
+export const passengerProfileApi = {
+  getProfiles: () => api.get('/passengers'),
+  createProfile: (data) => api.post('/passengers', data),
+  updateProfile: (id, data) => api.put(`/passengers/${id}`, data),
+  deleteProfile: (id) => api.delete(`/passengers/${id}`),
 }
 
 export const chatbotApi = {

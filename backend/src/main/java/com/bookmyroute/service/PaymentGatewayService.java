@@ -18,4 +18,9 @@ public interface PaymentGatewayService {
      * and records the payment transaction id.
      */
     BookingResponse verifyAndConfirm(PaymentVerifyRequest request, String userEmail);
+
+    /**
+     * Processes a refund via Razorpay
+     */
+    void processRefund(com.bookmyroute.entity.Payment payment, java.math.BigDecimal refundAmount);
 }

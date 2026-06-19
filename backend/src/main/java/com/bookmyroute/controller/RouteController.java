@@ -47,12 +47,7 @@ public class RouteController {
 
     @GetMapping("/cities")
     public ResponseEntity<ApiResponse<List<String>>> getCities() {
-        List<String> cities = routeService.getAllRoutes().stream()
-                .flatMap(r -> java.util.stream.Stream.of(r.getOrigin(), r.getDestination()))
-                .distinct()
-                .sorted()
-                .toList();
-        return ResponseEntity.ok(ApiResponse.success(cities));
+        return ResponseEntity.ok(ApiResponse.success(routeService.getAllCities()));
     }
 
     @PutMapping("/{id}")

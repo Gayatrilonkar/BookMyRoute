@@ -74,22 +74,26 @@ export default function AdminRoutes() {
       
       if (routeData) {
          setPickupLocations((routeData.pickupLocations || []).map(loc => ({
+           id: loc.id,
            pickupName: loc.pickupName || '',
            pickupAddress: loc.pickupAddress || '',
            pickupTime: loc.pickupTime || '08:00',
            landmark: loc.landmark || '',
            subLocations: (loc.subLocations || []).map(sub => ({
+             id: sub.id,
              subLocationName: sub.subLocationName,
              sequenceOrder: sub.sequenceOrder
            }))
          })))
          
          setDropLocations((routeData.dropLocations || []).map(loc => ({
+           id: loc.id,
            dropName: loc.dropName || '',
            dropAddress: loc.dropAddress || '',
            dropTime: loc.dropTime || '10:00',
            landmark: loc.landmark || '',
            subLocations: (loc.subLocations || []).map(sub => ({
+             id: sub.id,
              subLocationName: sub.subLocationName,
              sequenceOrder: sub.sequenceOrder
            }))

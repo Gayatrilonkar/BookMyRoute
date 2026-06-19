@@ -58,7 +58,8 @@ public class BookingServiceImpl implements BookingService {
                               PickupSubLocationRepository pickupSubLocationRepository,
                               DropSubLocationRepository dropSubLocationRepository,
                               EmailService emailService,
-                              ScheduleService scheduleService) {
+                              ScheduleService scheduleService,
+                              com.bookmyroute.service.PaymentGatewayService paymentGatewayService) {
         this.bookingRepository = bookingRepository;
         this.scheduleRepository = scheduleRepository;
         this.seatRepository = seatRepository;
@@ -72,6 +73,7 @@ public class BookingServiceImpl implements BookingService {
         this.dropSubLocationRepository = dropSubLocationRepository;
         this.emailService = emailService;
         this.scheduleService = scheduleService;
+        this.paymentGatewayService = paymentGatewayService;
     }
 
     private final BookingRepository bookingRepository;
@@ -87,6 +89,7 @@ public class BookingServiceImpl implements BookingService {
     private final DropSubLocationRepository dropSubLocationRepository;
     private final EmailService emailService;
     private final ScheduleService scheduleService;
+    private final com.bookmyroute.service.PaymentGatewayService paymentGatewayService;
 
     @Override
     @Transactional
@@ -242,6 +245,56 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    public com.bookmyroute.dto.response.CancellationQuoteResponse getCancellationQuote(String bookingRef, String userEmail) {
+        Booking booking = bookingRepository.findByBookingRef(bookingRef)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingRef));
+
+        if (!booking.getUser().getEmail().equals(userEmail)) {
+            throw new BusinessException("Access denied to this booking");
+        }
+
+        return calculateRefundQuote(booking);
+    }
+
+    private com.bookmyroute.dto.response.CancellationQuoteResponse calculateRefundQuote(Booking booking) {
+        BigDecimal totalFare = booking.getTotalAmount();
+        LocalDateTime departureTime = booking.getSchedule().getDepartureTime();
+        LocalDateTime now = LocalDateTime.now();
+
+        long hoursUntilDeparture = java.time.Duration.between(now, departureTime).toHours();
+
+        BigDecimal refundPercentage;
+        String policy;
+
+        if (hoursUntilDeparture > 24) {
+            refundPercentage = BigDecimal.valueOf(1.00); // 100%
+            policy = "100% refund (More than 24 hours before departure)";
+        } else if (hoursUntilDeparture > 12) {
+            refundPercentage = BigDecimal.valueOf(0.75); // 75%
+            policy = "75% refund (12-24 hours before departure)";
+        } else if (hoursUntilDeparture > 2) {
+            refundPercentage = BigDecimal.valueOf(0.50); // 50%
+            policy = "50% refund (2-12 hours before departure)";
+        } else {
+            refundPercentage = BigDecimal.ZERO; // 0%
+            policy = "No refund (Less than 2 hours before departure)";
+        }
+
+        BigDecimal refundAmount = totalFare.multiply(refundPercentage).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal cancellationCharges = totalFare.subtract(refundAmount);
+
+        return com.bookmyroute.dto.response.CancellationQuoteResponse.builder()
+                .bookingRef(booking.getBookingRef())
+                .totalFare(totalFare)
+                .cancellationCharges(cancellationCharges)
+                .refundAmount(refundAmount)
+                .refundPolicy(policy)
+                .isRefundable(refundAmount.compareTo(BigDecimal.ZERO) > 0)
+                .build();
+    }
+
+    @Override
+    @Transactional
     public BookingResponse cancelBooking(String bookingRef, String userEmail) {
         markPastBookingsCompleted();
         Booking booking = bookingRepository.findByBookingRef(bookingRef)
@@ -257,6 +310,8 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessException("Completed bookings cannot be cancelled");
         }
 
+        com.bookmyroute.dto.response.CancellationQuoteResponse quote = calculateRefundQuote(booking);
+
         booking.setStatus(BookingStatus.CANCELLED);
 
         Schedule schedule = booking.getSchedule();
@@ -265,6 +320,7 @@ public class BookingServiceImpl implements BookingService {
 
         if (booking.getPayment() != null) {
             booking.getPayment().setStatus(PaymentStatus.REFUNDED);
+            paymentGatewayService.processRefund(booking.getPayment(), quote.getRefundAmount());
         }
 
         Booking saved = bookingRepository.save(booking);
@@ -387,6 +443,8 @@ public class BookingServiceImpl implements BookingService {
                 .reviewId(review != null ? review.getReviewId() : null)
                 .notificationEmailSent(emailDelivery != null ? emailDelivery.isSent() : null)
                 .notificationEmailMessage(emailDelivery != null ? emailDelivery.getMessage() : null)
+                .refundStatus(pay != null ? pay.getRefundStatus() : null)
+                .refundAmount(pay != null && pay.getRefundStatus() != null && pay.getStatus() == PaymentStatus.REFUNDED ? pay.getAmount() : null)
                 .build();
     }
 }

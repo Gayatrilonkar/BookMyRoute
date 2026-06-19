@@ -11,4 +11,5 @@ public interface RouteService {
     List<Route> getAllRoutes();
     List<Route> searchRoutes(String origin, String destination);
     Route updateRoute(Long id, Route route);
+    List<String> getAllCities();
 }
